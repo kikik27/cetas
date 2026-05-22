@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import type { BoardGrid, Unit, SelectedSource, Projectile } from '../core/types'
 import { COLS, ROWS } from '../systems/boardSystem'
 import { SPRITE_SHEETS, TERRAIN, FX, ARROW_SPRITES, getSpriteKey, type AnimState } from '../assets/spriteRegistry'
+import { loadImg, preloadAllGameImages } from './assetLoader'
 
 export const BOARD_W = 672
 export const BOARD_H = 384
@@ -11,24 +12,17 @@ export const CW = BOARD_W / COLS   // 84
 export const CH = BOARD_H / ROWS   // 96
 const SPRITE_W = 80
 const SPRITE_H = 88
+const TILE_SIZE = 64
 
-// ─── Image cache ──────────────────────────────────────────────────────────────
+const ARENA_COLORS = {
+  enemyFallback: '#2a1a1a',
+  allyFallback: '#1e3a1e',
+  divider: 'rgba(255,255,255,0.15)',
+  enemyLabel: 'rgba(255,100,100,0.7)',
+  allyLabel: 'rgba(100,180,255,0.7)',
+} as const
 
-const imgCache = new Map<string, HTMLImageElement>()
-function loadImg(url: string): HTMLImageElement {
-  if (imgCache.has(url)) return imgCache.get(url)!
-  const img = new Image()
-  img.src = url
-  imgCache.set(url, img)
-  return img
-}
-function preloadAll() {
-  for (const sheet of Object.values(SPRITE_SHEETS))
-    for (const c of Object.values(sheet.clips)) { loadImg(c.url); if (c.effectUrl) loadImg(c.effectUrl) }
-  Object.values(TERRAIN).forEach(loadImg)
-  Object.values(FX).forEach(f => loadImg(f.url))
-  Object.values(ARROW_SPRITES).forEach(loadImg)
-}
+// ─── Image loading moved to assetLoader.ts ───────────────────────────────────
 
 // ─── Per-unit animation clock ─────────────────────────────────────────────────
 
@@ -73,24 +67,23 @@ function getVisualPos(uid: number, targetX: number, targetY: number): VisualPos 
 
 function drawArena(ctx: CanvasRenderingContext2D) {
   const tilemap = loadImg(TERRAIN.tilemap)
-  const TILE = 64
   if (tilemap.complete && tilemap.naturalWidth > 0) {
     for (let r = 0; r < 2; r++) for (let c = 0; c < COLS; c++)
-      ctx.drawImage(tilemap, 0, TILE, TILE, TILE, c * CW, r * CH, CW, CH)
+      ctx.drawImage(tilemap, 0, TILE_SIZE, TILE_SIZE, TILE_SIZE, c * CW, r * CH, CW, CH)
     for (let r = 2; r < ROWS; r++) for (let c = 0; c < COLS; c++)
-      ctx.drawImage(tilemap, TILE, 0, TILE, TILE, c * CW, r * CH, CW, CH)
+      ctx.drawImage(tilemap, TILE_SIZE, 0, TILE_SIZE, TILE_SIZE, c * CW, r * CH, CW, CH)
   } else {
-    ctx.fillStyle = '#2a1a1a'; ctx.fillRect(0, 0, BOARD_W, CH * 2)
-    ctx.fillStyle = '#1e3a1e'; ctx.fillRect(0, CH * 2, BOARD_W, CH * 2)
+    ctx.fillStyle = ARENA_COLORS.enemyFallback; ctx.fillRect(0, 0, BOARD_W, CH * 2)
+    ctx.fillStyle = ARENA_COLORS.allyFallback; ctx.fillRect(0, CH * 2, BOARD_W, CH * 2)
   }
-  ctx.fillStyle = 'rgba(255,255,255,0.15)'; ctx.fillRect(0, CH * 2, BOARD_W, 2)
+  ctx.fillStyle = ARENA_COLORS.divider; ctx.fillRect(0, CH * 2, BOARD_W, 2)
   const rock = loadImg(TERRAIN.rock1)
   if (rock.complete && rock.naturalWidth > 0)
-    [1, 3, 5, 7].forEach(c => ctx.drawImage(rock, 0, 0, 64, 64, c * CW + CW / 2 - 16, CH * 2 - 14, 32, 32))
+    [1, 3, 5, 7].forEach(c => ctx.drawImage(rock, 0, 0, TILE_SIZE, TILE_SIZE, c * CW + CW / 2 - 16, CH * 2 - 14, 32, 32))
   ctx.save()
   ctx.font = 'bold 10px sans-serif'
-  ctx.fillStyle = 'rgba(255,100,100,0.7)'; ctx.fillText('MUSUH', 6, 14)
-  ctx.fillStyle = 'rgba(100,180,255,0.7)'; ctx.fillText('PASUKANMU', 6, CH * 3 - 4)
+  ctx.fillStyle = ARENA_COLORS.enemyLabel; ctx.fillText('MUSUH', 6, 14)
+  ctx.fillStyle = ARENA_COLORS.allyLabel; ctx.fillText('PASUKANMU', 6, CH * 3 - 4)
   ctx.restore()
 }
 
@@ -208,7 +201,7 @@ export default function PixiBoard({
   speedUpRef.current     = speedUp
   projectilesRef.current = projectiles
 
-  useEffect(() => { preloadAll() }, [])
+  useEffect(() => { preloadAllGameImages() }, [])
 
   // Single persistent RAF loop
   useEffect(() => {
