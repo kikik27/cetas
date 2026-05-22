@@ -1,5 +1,8 @@
 'use client'
 
+import { Button } from '@/src/components/ui/Button'
+import { Coins, Swords, Timer, Dices } from 'lucide-react'
+
 interface ControlsProps {
   phase: 'prep' | 'battle'
   hasSelected: boolean
@@ -11,78 +14,111 @@ interface ControlsProps {
   onBattle: () => void
 }
 
+const BATTLE_SECONDS = 30
+
 export default function Controls({
   phase, hasSelected, secondsLeft, speedUp, onReroll, onSell, onBattle,
 }: ControlsProps) {
+
+  /* ── Prep phase ── */
   if (phase !== 'battle') {
     return (
       <div className="flex flex-col gap-2">
         <div className="flex gap-2">
-          <button onClick={onReroll} className="btn btn-blue flex-1 h-12 rounded-xl text-[12px]">
-            🎲 Reroll <span style={{ opacity: 0.65, fontSize: 10 }}>−2🪙</span>
-          </button>
+          {/* Reroll */}
+          <Button
+            onClick={onReroll}
+            variant="pixelBlue"
+            size="md"
+            className="flex-1 text-[12px]"
+          >
+            <Dices className="h-4 w-4" />
+            Reroll
+            <span className="ml-0.5 text-[10px] opacity-60">−2🪙</span>
+          </Button>
+
+          {/* Sell — only when unit selected */}
           {hasSelected && (
-            <button onClick={onSell} className="btn btn-sm-red w-12 h-12 rounded-xl text-[14px]" aria-label="Jual unit">
-              💰
-            </button>
+            <Button
+              onClick={onSell}
+              variant="pixelDanger"
+              size="md"
+              className="w-12 px-0"
+              aria-label="Jual unit terpilih"
+            >
+              <Coins className="h-4 w-4" />
+            </Button>
           )}
-          <button onClick={onBattle} className="btn btn-red flex-1 h-12 rounded-xl text-[13px] font-black">
-            ⚔️ BATTLE
-          </button>
+
+          {/* Battle */}
+          <Button
+            onClick={onBattle}
+            variant="pixelGold"
+            size="md"
+            className="flex-1 text-[13px] font-black tracking-wide anim-glow"
+          >
+            <Swords className="h-4 w-4" />
+            SERANG!
+          </Button>
         </div>
-        <p className="text-center text-[10px]" style={{ color: 'var(--text-3)' }}>
-          Tap unit → tap tile untuk menempatkan
+
+        <p className="text-center text-[10px] text-[var(--text-3)]">
+          Tap unit → tap tile untuk menempatkan · Tap unit terpilih untuk jual
         </p>
       </div>
     )
   }
 
-  // Battle timer
-  const pct = speedUp ? 100 : (secondsLeft / 30) * 100
-  const barColor = speedUp ? '#f97316'
-    : secondsLeft <= 5 ? '#ef4444'
-    : secondsLeft <= 10 ? '#facc15'
-    : '#4ade80'
-  const timeLabel = speedUp ? '⚡ 3×' : `${secondsLeft}s`
-  const timeLabelColor = speedUp ? '#f97316'
-    : secondsLeft <= 5 ? '#ef4444'
-    : secondsLeft <= 10 ? '#facc15'
-    : '#4ade80'
+  /* ── Battle phase ── */
+  const pct      = speedUp ? 100 : (secondsLeft / BATTLE_SECONDS) * 100
+  const barColor = speedUp
+    ? 'var(--enemy)'
+    : secondsLeft <= 5
+    ? 'var(--enemy)'
+    : secondsLeft <= 10
+    ? 'var(--warn)'
+    : 'var(--ok)'
+  const timeLabel = speedUp ? '3×' : `${secondsLeft}s`
 
   return (
-    <div
-      className="flex items-center gap-2.5 rounded-xl px-3 py-2.5"
-      style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)' }}
-    >
-      <span className="text-[15px] flex-shrink-0">⏱</span>
+    <div className="relic-frame flex items-center gap-3 rounded-xl px-3 py-2.5">
+      {/* Icon */}
+      <Timer className="h-4 w-4 flex-shrink-0 text-[var(--text-3)]" />
+
+      {/* Time label */}
       <span
-        className="font-mono font-black text-[16px] tabular-nums w-[52px] flex-shrink-0"
-        style={{ color: timeLabelColor }}
+        className="w-[44px] flex-shrink-0 font-mono text-[16px] font-black tabular-nums"
+        style={{ color: barColor, textShadow: `0 0 8px ${barColor}` }}
       >
         {timeLabel}
       </span>
-      <div
-        className="flex-1 h-2.5 rounded-full overflow-hidden"
-        style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.05)' }}
-      >
+
+      {/* Progress bar */}
+      <div className="h-3 flex-1 overflow-hidden rounded-full border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.04)]">
         {speedUp ? (
           <div
             className="h-full w-full"
             style={{
-              background: '#f97316',
-              backgroundImage: 'repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(255,255,255,0.22) 4px,rgba(255,255,255,0.22) 8px)',
+              background: 'repeating-linear-gradient(45deg, var(--enemy) 0px, var(--enemy) 6px, rgba(255,80,80,0.5) 6px, rgba(255,80,80,0.5) 12px)',
               animation: 'stripe 0.4s linear infinite',
+              backgroundSize: '32px 100%',
             }}
           />
         ) : (
           <div
             className="h-full rounded-full transition-all duration-1000"
-            style={{ width: `${pct}%`, background: barColor }}
+            style={{
+              width: `${pct}%`,
+              background: barColor,
+              boxShadow: `0 0 8px ${barColor}`,
+            }}
           />
         )}
       </div>
-      <span className="text-[10px] flex-shrink-0" style={{ color: 'var(--text-3)' }}>
-        {speedUp ? 'Speed up!' : 'Berlangsung…'}
+
+      {/* Status label */}
+      <span className="flex-shrink-0 text-[10px] font-semibold text-[var(--text-3)]">
+        {speedUp ? '⚡ Speed up!' : 'Berlangsung…'}
       </span>
     </div>
   )

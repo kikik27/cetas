@@ -66,82 +66,103 @@ export default function GameHUD() {
   const secondsLeft = speedUp ? 0 : Math.max(0, Math.ceil((BATTLE_LIMIT_MS - battleTimeMs) / 1000))
 
   // ── Modal ─────────────────────────────────────────────────────────────────
-  const [modal, setModal] = useState({ show: false, title: '', titleColor: '', description: '', buttonLabel: '' })
+  const [modal, setModal] = useState({
+    show: false, title: '', titleColor: '', description: '', buttonLabel: '',
+  })
 
   useEffect(() => {
     if (phase !== 'battle' || battleRunning) return
     const result = evaluateBattleEnd(board, round)
     if (hp <= 0) {
-      setModal({ show: true, title: '☠️ Game Over', titleColor: '#ef4444', description: 'HP habis! Pertandingan selesai.', buttonLabel: 'Main Lagi' })
+      setModal({
+        show: true,
+        title: 'Game Over',
+        titleColor: 'var(--enemy)',
+        description: 'HP habis! Pertandingan selesai. Coba lagi?',
+        buttonLabel: 'Main Lagi',
+      })
     } else if (result.win) {
-      setModal({ show: true, title: '🏆 Menang!', titleColor: '#22c55e', description: `${result.aliveCount} unit selamat! +🪙${result.goldEarned} koin. Slot bertambah!`, buttonLabel: round >= 5 ? 'Main Lagi' : `Ronde ${round + 1} →` })
+      setModal({
+        show: true,
+        title: 'Menang!',
+        titleColor: 'var(--ok)',
+        description: `${result.aliveCount} unit selamat! +${result.goldEarned} koin. Slot bertambah!`,
+        buttonLabel: round >= 5 ? 'Main Lagi' : `Ronde ${round + 1} →`,
+      })
     } else {
-      setModal({ show: true, title: '😤 Kalah!', titleColor: '#f97316', description: `−${result.hpLost} HP. Sisa HP: ${Math.max(0, hp - result.hpLost)}. Slot bertambah!`, buttonLabel: round >= 5 ? 'Main Lagi' : `Ronde ${round + 1} →` })
+      setModal({
+        show: true,
+        title: 'Kalah!',
+        titleColor: 'var(--warn)',
+        description: `−${result.hpLost} HP. Sisa HP: ${Math.max(0, hp - result.hpLost)}. Slot bertambah!`,
+        buttonLabel: round >= 5 ? 'Main Lagi' : `Ronde ${round + 1} →`,
+      })
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [battleRunning, phase])
 
   const boardCount = getBoardUnitCount(board)
-  const isPrep = phase === 'prep'
+  const isPrep     = phase === 'prep'
 
   return (
-    <div
-      className="flex flex-col mx-auto select-none"
-      style={{
-        maxWidth: 430,
-        minHeight: '100dvh',
-        paddingTop: 'max(env(safe-area-inset-top), 10px)',
-        paddingBottom: 'max(env(safe-area-inset-bottom), 10px)',
-        paddingLeft: 10,
-        paddingRight: 10,
-        gap: 8,
-      }}
-    >
+    <div className="game-shell mx-auto flex select-none flex-col gap-2 [padding-top:max(env(safe-area-inset-top),10px)] [padding-bottom:max(env(safe-area-inset-bottom),10px)]">
       <h1 className="sr-only">Celo Tactics</h1>
 
-      {/* ── 1. Top HUD ── */}
-      <TopBar round={round} hp={hp} gold={gold} boardUnitCount={boardCount} maxBoardSlots={maxBoardSlots} phase={phase} />
+      {/* 1 ── Top HUD */}
+      <TopBar
+        round={round} hp={hp} gold={gold}
+        boardUnitCount={boardCount} maxBoardSlots={maxBoardSlots}
+        phase={phase}
+      />
 
-      {/* ── 2. Enemy intel — only prep ── */}
-      {isPrep && <EnemyIntel enemies={enemyPreview} round={round} />}
+      {/* 2 ── Enemy intel (prep only) */}
+      {isPrep && (
+        <EnemyIntel enemies={enemyPreview} round={round} />
+      )}
 
-      {/* ── 3. Board — hero element ── */}
-      <div
-        className="flex-shrink-0 rounded-2xl overflow-hidden"
-        style={{
-          border: '1.5px solid rgba(212,170,80,0.22)',
-          boxShadow: '0 0 0 1px rgba(212,170,80,0.06) inset, 0 12px 40px rgba(0,0,0,0.6)',
-          background: '#080612',
-        }}
-      >
+      {/* 3 ── Board */}
+      <div className="board-frame flex-shrink-0">
         <PixiBoard
-          board={board} phase={phase} selected={selected}
-          maxBoardSlots={maxBoardSlots} speedUp={speedUp}
+          board={board}
+          phase={phase}
+          selected={selected}
+          maxBoardSlots={maxBoardSlots}
+          speedUp={speedUp}
           projectiles={projectiles}
           onCellClick={clickBoardCell}
         />
       </div>
 
-      {/* ── 4. Bench ── */}
+      {/* 4 ── Bench */}
       <Bench bench={bench} selected={selected} onSlotClick={clickBenchSlot} />
 
-      {/* ── 5. Shop — only prep ── */}
-      {isPrep && <Shop shop={shop} onBuy={buyUnit} />}
+      {/* 5 ── Shop (prep only) */}
+      {isPrep && (
+        <Shop shop={shop} onBuy={buyUnit} />
+      )}
 
-      {/* ── 6. Controls / timer ── */}
+      {/* 6 ── Controls / timer */}
       <Controls
-        phase={phase} hasSelected={selected !== null}
-        battleRunning={battleRunning} secondsLeft={secondsLeft} speedUp={speedUp}
-        onReroll={reroll} onSell={sellSelected} onBattle={startBattle}
+        phase={phase}
+        hasSelected={selected !== null}
+        battleRunning={battleRunning}
+        secondsLeft={secondsLeft}
+        speedUp={speedUp}
+        onReroll={reroll}
+        onSell={sellSelected}
+        onBattle={startBattle}
       />
 
-      {/* ── 7. Log ── */}
+      {/* 7 ── Battle log */}
       <BattleLog log={log} />
 
-      {/* ── 8. Modal ── */}
+      {/* 8 ── Round result modal */}
       <RoundModal
-        show={modal.show} title={modal.title} titleColor={modal.titleColor}
-        description={modal.description} buttonLabel={modal.buttonLabel}
+        show={modal.show}
+        title={modal.title}
+        titleColor={modal.titleColor}
+        description={modal.description}
+        buttonLabel={modal.buttonLabel}
         onNext={() => { setModal(m => ({ ...m, show: false })); nextRound() }}
       />
     </div>

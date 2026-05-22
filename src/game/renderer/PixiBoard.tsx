@@ -3,7 +3,9 @@
 import { useEffect, useRef } from 'react'
 import type { BoardGrid, Unit, SelectedSource, Projectile } from '../core/types'
 import { COLS, ROWS } from '../systems/boardSystem'
-import { SPRITE_SHEETS, TERRAIN, FX, ARROW_SPRITES, getSpriteKey, type AnimState } from '../assets/spriteRegistry'
+import { SPRITE_SHEETS, getSpriteKey, type AnimState } from '../assets/spriteRegistry'
+import { loadImg, preloadAllGameImages } from './assetLoader'
+import { drawArena, drawFloats, drawHpBar, drawProjectiles, drawStars, drawUnit } from './drawHelpers'
 
 export const BOARD_W = 672
 export const BOARD_H = 384
@@ -11,24 +13,17 @@ export const CW = BOARD_W / COLS   // 84
 export const CH = BOARD_H / ROWS   // 96
 const SPRITE_W = 80
 const SPRITE_H = 88
+const TILE_SIZE = 64
 
-// ─── Image cache ──────────────────────────────────────────────────────────────
+const ARENA_COLORS = {
+  enemyFallback: '#2a1a1a',
+  allyFallback: '#1e3a1e',
+  divider: 'rgba(255,255,255,0.15)',
+  enemyLabel: 'rgba(255,100,100,0.7)',
+  allyLabel: 'rgba(100,180,255,0.7)',
+} as const
 
-const imgCache = new Map<string, HTMLImageElement>()
-function loadImg(url: string): HTMLImageElement {
-  if (imgCache.has(url)) return imgCache.get(url)!
-  const img = new Image()
-  img.src = url
-  imgCache.set(url, img)
-  return img
-}
-function preloadAll() {
-  for (const sheet of Object.values(SPRITE_SHEETS))
-    for (const c of Object.values(sheet.clips)) { loadImg(c.url); if (c.effectUrl) loadImg(c.effectUrl) }
-  Object.values(TERRAIN).forEach(loadImg)
-  Object.values(FX).forEach(f => loadImg(f.url))
-  Object.values(ARROW_SPRITES).forEach(loadImg)
-}
+// ─── Image loading moved to assetLoader.ts ───────────────────────────────────
 
 // ─── Per-unit animation clock ─────────────────────────────────────────────────
 
@@ -69,110 +64,7 @@ function getVisualPos(uid: number, targetX: number, targetY: number): VisualPos 
   return visualPos.get(uid)!
 }
 
-// ─── Drawing helpers ──────────────────────────────────────────────────────────
-
-function drawArena(ctx: CanvasRenderingContext2D) {
-  const tilemap = loadImg(TERRAIN.tilemap)
-  const TILE = 64
-  if (tilemap.complete && tilemap.naturalWidth > 0) {
-    for (let r = 0; r < 2; r++) for (let c = 0; c < COLS; c++)
-      ctx.drawImage(tilemap, 0, TILE, TILE, TILE, c * CW, r * CH, CW, CH)
-    for (let r = 2; r < ROWS; r++) for (let c = 0; c < COLS; c++)
-      ctx.drawImage(tilemap, TILE, 0, TILE, TILE, c * CW, r * CH, CW, CH)
-  } else {
-    ctx.fillStyle = '#2a1a1a'; ctx.fillRect(0, 0, BOARD_W, CH * 2)
-    ctx.fillStyle = '#1e3a1e'; ctx.fillRect(0, CH * 2, BOARD_W, CH * 2)
-  }
-  ctx.fillStyle = 'rgba(255,255,255,0.15)'; ctx.fillRect(0, CH * 2, BOARD_W, 2)
-  const rock = loadImg(TERRAIN.rock1)
-  if (rock.complete && rock.naturalWidth > 0)
-    [1, 3, 5, 7].forEach(c => ctx.drawImage(rock, 0, 0, 64, 64, c * CW + CW / 2 - 16, CH * 2 - 14, 32, 32))
-  ctx.save()
-  ctx.font = 'bold 10px sans-serif'
-  ctx.fillStyle = 'rgba(255,100,100,0.7)'; ctx.fillText('MUSUH', 6, 14)
-  ctx.fillStyle = 'rgba(100,180,255,0.7)'; ctx.fillText('PASUKANMU', 6, CH * 3 - 4)
-  ctx.restore()
-}
-
-function drawHpBar(ctx: CanvasRenderingContext2D, unit: Unit, cx: number, cy: number) {
-  const barW = SPRITE_W - 4, barH = 5
-  const bx = cx - barW / 2, by = cy + SPRITE_H / 2 - barH - 1
-  const pct = Math.max(0, unit.curHp / unit.maxHp)
-  ctx.fillStyle = '#1a1a1a'; ctx.fillRect(bx, by, barW, barH)
-  ctx.fillStyle = pct > 0.5 ? '#4ade80' : pct > 0.25 ? '#facc15' : '#f87171'
-  ctx.fillRect(bx, by, Math.round(barW * pct), barH)
-  ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 0.5; ctx.strokeRect(bx, by, barW, barH)
-}
-
-function drawStars(ctx: CanvasRenderingContext2D, stars: number, cx: number, cy: number) {
-  if (stars <= 1) return
-  ctx.save(); ctx.font = 'bold 10px sans-serif'; ctx.fillStyle = '#fbbf24'
-  ctx.strokeStyle = '#000'; ctx.lineWidth = 2
-  const txt = '★'.repeat(stars), tw = ctx.measureText(txt).width
-  ctx.strokeText(txt, cx - tw / 2, cy - SPRITE_H / 2 + 10)
-  ctx.fillText(txt, cx - tw / 2, cy - SPRITE_H / 2 + 10)
-  ctx.restore()
-}
-
-function drawFloats(ctx: CanvasRenderingContext2D, unit: Unit, cx: number, cy: number) {
-  unit.floats = unit.floats.filter(f => {
-    ctx.save(); ctx.globalAlpha = Math.max(0, f.life / 20)
-    ctx.font = 'bold 13px sans-serif'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.fillStyle = f.color
-    ctx.strokeText(f.txt, cx - 10, cy - SPRITE_H / 2 - f.rise)
-    ctx.fillText(f.txt, cx - 10, cy - SPRITE_H / 2 - f.rise)
-    ctx.restore(); f.rise += 1.5; f.life--; return f.life > 0
-  })
-}
-
-function drawUnit(ctx: CanvasRenderingContext2D, unit: Unit, frame: number, cx: number, cy: number) {
-  const key = getSpriteKey(unit.spriteType, unit.enemy)
-  const sheet = SPRITE_SHEETS[key]
-  if (!sheet) return
-  const animState: AnimState = unit.dead ? 'death' : (unit.animState as AnimState) ?? 'idle'
-  const clip = sheet.clips[animState] ?? sheet.clips.idle
-  const img = loadImg(clip.url)
-  const destX = cx - SPRITE_W / 2, destY = cy - SPRITE_H / 2
-  if (unit.dead) {
-    const progress = clip.frames > 1 ? frame / (clip.frames - 1) : 1
-    ctx.globalAlpha = Math.max(0.1, 1 - progress * 0.9)
-  }
-  if (img.complete && img.naturalWidth > 0) {
-    const flipX = unit.enemy
-    ctx.save()
-    if (flipX) {
-      ctx.translate(cx + SPRITE_W / 2, destY); ctx.scale(-1, 1)
-      ctx.drawImage(img, frame * clip.frameW, 0, clip.frameW, clip.frameH, 0, 0, SPRITE_W, SPRITE_H)
-    } else {
-      ctx.drawImage(img, frame * clip.frameW, 0, clip.frameW, clip.frameH, destX, destY, SPRITE_W, SPRITE_H)
-    }
-    ctx.restore()
-  } else {
-    ctx.fillStyle = unit.enemy ? '#7f1d1d' : '#1e3a5f'
-    ctx.fillRect(destX + 4, destY + 4, SPRITE_W - 8, SPRITE_H - 8)
-  }
-  ctx.globalAlpha = 1
-}
-
-function drawProjectiles(ctx: CanvasRenderingContext2D, projectiles: Projectile[]) {
-  for (const p of projectiles) {
-    const arrowImg = loadImg(ARROW_SPRITES[p.team] ?? ARROW_SPRITES.blue)
-    const curX = p.x + (p.tx - p.x) * p.progress
-    const curY = p.y + (p.ty - p.y) * p.progress
-    const angle = Math.atan2(p.ty - p.y, p.tx - p.x)
-    const size = 20
-    ctx.save()
-    ctx.translate(curX, curY)
-    ctx.rotate(angle)
-    if (arrowImg.complete && arrowImg.naturalWidth > 0) {
-      ctx.drawImage(arrowImg, -size / 2, -size / 2, size, size)
-    } else {
-      // Fallback: simple line arrow
-      ctx.strokeStyle = p.team === 'blue' ? '#60a5fa' : '#f87171'
-      ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(8, 0); ctx.stroke()
-    }
-    ctx.restore()
-  }
-}
+// ─── Drawing helpers moved to drawHelpers.ts ───────────────────────────────
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -208,7 +100,7 @@ export default function PixiBoard({
   speedUpRef.current     = speedUp
   projectilesRef.current = projectiles
 
-  useEffect(() => { preloadAll() }, [])
+  useEffect(() => { preloadAllGameImages() }, [])
 
   // Single persistent RAF loop
   useEffect(() => {
@@ -243,7 +135,7 @@ export default function PixiBoard({
           if (curBoard[r][c] && !curBoard[r][c]!.enemy) boardUnitCount++
 
       ctx.clearRect(0, 0, BOARD_W, BOARD_H)
-      drawArena(ctx)
+      drawArena(ctx, { cols: COLS, rows: ROWS, cw: CW, ch: CH, boardW: BOARD_W, tileSize: TILE_SIZE })
 
       if (curSpeedUp) {
         ctx.save()
@@ -304,9 +196,9 @@ export default function PixiBoard({
           const clock = getClock(u.uid, u.animState ?? 'idle')
           const frame = tickClock(clock, u, animDelta)
 
-          drawUnit(ctx, u, frame, vp.x, vp.y)
-          if (!u.dead) { drawHpBar(ctx, u, vp.x, vp.y); drawStars(ctx, u.stars, vp.x, vp.y) }
-          drawFloats(ctx, u, vp.x, vp.y)
+          drawUnit(ctx, u, frame, vp.x, vp.y, SPRITE_W, SPRITE_H)
+          if (!u.dead) { drawHpBar(ctx, u, vp.x, vp.y, SPRITE_W, SPRITE_H); drawStars(ctx, u.stars, vp.x, vp.y, SPRITE_H) }
+          drawFloats(ctx, u, vp.x, vp.y, SPRITE_H)
         }
       }
 
@@ -380,3 +272,5 @@ export function drawUnitPreview(
     })
   })
 }
+
+
