@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/src/components/ui/Button'
+import { Frown, Skull, Trophy } from 'lucide-react'
 
 interface RoundModalProps {
   show: boolean; title: string; titleColor: string
@@ -12,7 +13,6 @@ export default function RoundModal({ show, title, titleColor, description, butto
 
   const isWin = title.includes('Menang')
   const isGameOver = title.includes('Game Over')
-  const emoji = isGameOver ? '☠️' : isWin ? '🏆' : '😤'
   const btnVariant: 'gold' | 'red' = isWin ? 'gold' : 'red'
 
   return (
@@ -25,7 +25,9 @@ export default function RoundModal({ show, title, titleColor, description, butto
         <div className="h-1 w-full" style={{ background: titleColor }} />
 
         <div className="flex flex-col items-center gap-3 px-6 py-6 text-center">
-          <div className="text-[52px] leading-none">{emoji}</div>
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--border)] bg-white/5" style={{ color: titleColor }}>
+            {isGameOver ? <Skull className="h-8 w-8" /> : isWin ? <Trophy className="h-8 w-8" /> : <Frown className="h-8 w-8" />}
+          </div>
 
           <h2 id="modal-title" className="text-[20px] font-black" style={{ color: titleColor }}>
             {title.replace(/^[^\s]+\s/, '')}

@@ -72,11 +72,11 @@ export default function GameHUD() {
     if (phase !== 'battle' || battleRunning) return
     const result = evaluateBattleEnd(board, round)
     if (hp <= 0) {
-      setModal({ show: true, title: '☠️ Game Over', titleColor: 'var(--enemy)', description: 'HP habis! Pertandingan selesai.', buttonLabel: 'Main Lagi' })
+      setModal({ show: true, title: 'Game Over', titleColor: 'var(--enemy)', description: 'HP habis! Pertandingan selesai.', buttonLabel: 'Main Lagi' })
     } else if (result.win) {
-      setModal({ show: true, title: '🏆 Menang!', titleColor: 'var(--ok)', description: `${result.aliveCount} unit selamat! +🪙${result.goldEarned} koin. Slot bertambah!`, buttonLabel: round >= 5 ? 'Main Lagi' : `Ronde ${round + 1} →` })
+      setModal({ show: true, title: 'Menang!', titleColor: 'var(--ok)', description: `${result.aliveCount} unit selamat! +${result.goldEarned} koin. Slot bertambah!`, buttonLabel: round >= 5 ? 'Main Lagi' : `Ronde ${round + 1} →` })
     } else {
-      setModal({ show: true, title: '😤 Kalah!', titleColor: 'var(--warn)', description: `−${result.hpLost} HP. Sisa HP: ${Math.max(0, hp - result.hpLost)}. Slot bertambah!`, buttonLabel: round >= 5 ? 'Main Lagi' : `Ronde ${round + 1} →` })
+      setModal({ show: true, title: 'Kalah!', titleColor: 'var(--warn)', description: `−${result.hpLost} HP. Sisa HP: ${Math.max(0, hp - result.hpLost)}. Slot bertambah!`, buttonLabel: round >= 5 ? 'Main Lagi' : `Ronde ${round + 1} →` })
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [battleRunning, phase])

@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/src/components/ui/Button'
+import { Coins, Swords, Timer, Dices } from 'lucide-react'
 
 interface ControlsProps {
   phase: 'prep' | 'battle'
@@ -23,15 +24,15 @@ export default function Controls({
       <div className="flex flex-col gap-2">
         <div className="flex gap-2">
           <Button onClick={onReroll} variant="blue" size="md" className="flex-1 text-[12px]">
-            🎲 Reroll <span className="text-[10px] opacity-65">−2🪙</span>
+            <Dices className="h-4 w-4" /> Reroll <span className="text-[10px] opacity-65">−2</span>
           </Button>
           {hasSelected && (
             <Button onClick={onSell} variant="danger" size="md" className="w-12 px-0 text-[14px]" aria-label="Jual unit">
-              💰
+              <Coins className="h-4 w-4" />
             </Button>
           )}
           <Button onClick={onBattle} variant="red" size="md" className="flex-1 text-[13px] font-black">
-            ⚔️ BATTLE
+            <Swords className="h-4 w-4" /> BATTLE
           </Button>
         </div>
         <p className="text-center text-[10px] text-[var(--text-3)]">
@@ -50,7 +51,7 @@ export default function Controls({
 
   return (
     <div className="surface flex items-center gap-2.5 px-3 py-2.5">
-      <span className="flex-shrink-0 text-[15px]">⏱</span>
+      <span className="flex-shrink-0 text-[15px]"><Timer className="inline h-4 w-4" /></span>
       <span className="w-[52px] flex-shrink-0 font-mono text-[16px] font-black tabular-nums" style={{ color: barColor }}>
         {timeLabel}
       </span>
