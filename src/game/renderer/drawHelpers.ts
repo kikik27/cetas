@@ -63,7 +63,7 @@ export function drawUnit(ctx: CanvasRenderingContext2D, unit: Unit, frame: numbe
     ctx.globalAlpha = Math.max(0.1, 1 - progress * 0.9)
   }
   if (img.complete && img.naturalWidth > 0) {
-    const flipX = unit.enemy
+    const flipX = unit.facingLeft
     ctx.save()
     if (flipX) {
       ctx.translate(cx + spriteW / 2, destY); ctx.scale(-1, 1)

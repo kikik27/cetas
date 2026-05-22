@@ -55,7 +55,7 @@ export default function Controls({
             onClick={onBattle}
             variant="pixelGold"
             size="md"
-            className="flex-1 text-[13px] font-black tracking-wide anim-glow"
+            className="flex-1 text-[13px] font-black"
           >
             <Swords className="h-4 w-4" />
             BATTLE!

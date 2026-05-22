@@ -288,6 +288,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
           attackTimer: 0,
           moveTimer: 0,
           floats: [],
+          facingLeft: false,            // allies always reset facing right
         }
       })
     )
@@ -306,6 +307,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         attackTimer: 0,
         moveTimer: 0,
         floats: [],
+        facingLeft: false,
       }
     })
 
