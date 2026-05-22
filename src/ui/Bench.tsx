@@ -20,7 +20,7 @@ export default function Bench({ bench, selected, onSlotClick }: BenchProps) {
         <span className="label">Bangku</span>
         <span className="text-[9px] text-[var(--text-3)]">{filled}/8</span>
       </div>
-      <div className="scroll-x flex gap-1.5 pb-0.5">
+      <div className="scroll-x flex flex-nowrap gap-1.5 overflow-x-auto pb-1 [scrollbar-width:thin]" role="region" aria-label="Daftar bangku (geser horizontal)">
         {bench.map((unit, i) => {
           const isSel = selected?.src === 'bench' && (selected as { src: 'bench'; idx: number }).idx === i
           return <BenchSlot key={i} unit={unit} isSelected={isSel} onClick={() => onSlotClick(i)} />
