@@ -5,12 +5,12 @@ import { Button } from '@/src/components/ui/Button'
 import { Card, CardContent } from '@/src/components/ui/Card'
 import { LayoutGrid, Swords, Trophy } from 'lucide-react'
 
-const PREVIEW_UNITS = [
-  { src: '/assets/ui/avatars/avatar-01.png', name: 'Warrior' },
-  { src: '/assets/ui/avatars/avatar-02.png', name: 'Archer' },
-  { src: '/assets/ui/avatars/avatar-03.png', name: 'Lancer' },
-  { src: '/assets/ui/avatars/avatar-04.png', name: 'Pawn' },
-]
+// const PREVIEW_UNITS = [
+//   { src: '/assets/ui/avatars/avatar-01.png', name: 'Warrior' },
+//   { src: '/assets/ui/avatars/avatar-02.png', name: 'Archer' },
+//   { src: '/assets/ui/avatars/avatar-03.png', name: 'Lancer' },
+//   { src: '/assets/ui/avatars/avatar-04.png', name: 'Pawn' },
+// ]
 
 const FX_PARTICLES = [
   { src: '/assets/ui/icons/icon-01.png', cls: 'particle p1' },
@@ -28,66 +28,55 @@ const FX_PARTICLES = [
 
 export default function Home() {
   return (
-    <div className="landing-bg game-scroll app-frame-outer">
-      <div className="mobile-shell relative overflow-hidden">
+    <div className="landing-bg game-scroll app-frame-outer mobile-shell relative overflow-hidden flex">
 
-        {FX_PARTICLES.map((p, i) => (
-          <Image key={i} src={p.src} alt="" width={18} height={18} className={p.cls} aria-hidden />
-        ))}
+      {FX_PARTICLES.map((p, i) => (
+        <Image key={i} src={p.src} alt="" width={18} height={18} className={p.cls} aria-hidden />
+      ))}
 
-        {/* ── Hero ─────────────────────────────────────── */}
-        <section className="relative z-10 flex flex-col items-center gap-3 px-4 pt-9 pb-5">
-          <div className="relic-frame logo-drop relative h-24 w-24 overflow-hidden rounded-2xl p-1">
-            <Image src="/logo.png" alt="CETAS" fill className="object-contain p-1" priority />
-          </div>
+      {/* ── Hero ─────────────────────────────────────── */}
+      <section className="relative z-10 flex flex-col items-center gap-3 px-4 pt-9 pb-5">
+        <div className="text-center">
+          <p className="font-display text-[10px] uppercase tracking-[0.28em] text-[#f2ebdb]">Dark Fantasy Auto Battler</p>
+          <Image src="/logo.png" alt="CETAS" fill className="object-contain p-1" priority />
 
-          <div className="text-center">
-            <p className="font-display text-[10px] uppercase tracking-[0.28em] text-[#f2ebdb]">Dark Fantasy Auto Battler</p>
-            <h1 className="font-heading mt-1 text-[34px] font-semibold leading-[0.95] tracking-wide text-[#ffe09c] text-shadow-gold">
-              CETAS
-            </h1>
-            <p className="mt-1 text-[12px] leading-relaxed text-[#f0e8d8]">
-              Build squad. Fight realm. Earn glory.
-            </p>
-          </div>
-
-          <div className="flex gap-2">
-            <Badge>Phase I</Badge>
-            <Badge>Mobile Mini App</Badge>
-          </div>
-        </section>
-
-        {/* ── Preview card ─────────────────────────────── */}
-        <section className="relative z-10 px-4">
-          <Card className="relic-frame overflow-hidden">
-            <CardContent className="p-0">
-              <div className="grid grid-cols-4 gap-0">
-                {PREVIEW_UNITS.map((unit) => (
-                  <div key={unit.name} className="relative aspect-square border-r border-[var(--border)] last:border-r-0">
-                    <Image src={unit.src} alt={unit.name} fill className="object-contain p-2" />
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* ── CTA ──────────────────────────────────────── */}
-        <section className="relative z-10 flex flex-col gap-3 px-4 pt-4 pb-10">
-          <Link href="/game">
-            <Button variant="gold" size="lg" className="w-full anim-glow">
-              <Swords className="h-4 w-4" /> MULAI BERMAIN
-            </Button>
-          </Link>
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="ghost" size="sm" disabled><Trophy className="h-3 w-3" /> Leaderboard</Button>
-            <Button variant="ghost" size="sm" disabled><LayoutGrid className="h-3 w-3" /> Koleksi</Button>
-          </div>
-          <p className="text-center text-[11px] text-[#efe6d2]">
-            Celo Tactics — Mini App Edition
+          <p className="mt-1 text-[12px] leading-relaxed text-[#f0e8d8]">
+            Build squad. Fight realm. Earn glory.
           </p>
-        </section>
-      </div>
+        </div>
+
+        <div className="flex gap-2">
+          <Badge>Phase I</Badge>
+          <Badge>Mobile Mini App</Badge>
+        </div>
+      </section>
+
+      {/* ── Preview card ─────────────────────────────── */}
+      {/* <section className="relative z-10 px-4">
+        <Card className="relic-frame overflow-hidden">
+          <CardContent className="p-0">
+            <div className="grid grid-cols-4 gap-0">
+              {PREVIEW_UNITS.map((unit) => (
+                <div key={unit.name} className="relative aspect-square border-r border-[var(--border)] last:border-r-0">
+                  <Image src={unit.src} alt={unit.name} fill className="object-contain p-2" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </section> */}
+
+      {/* ── CTA ──────────────────────────────────────── */}
+      <section className="relative z-10 flex flex-col gap-3 px-4">
+        <Link href="/game">
+          <Button variant="gold" size="lg" className="w-full anim-glow">
+            <Swords className="h-4 w-4" /> MULAI BERMAIN
+          </Button>
+        </Link>
+        <p className="text-center font-black text-sm text-primary">
+          Celo Tactics — Mini App Edition
+        </p>
+      </section>
     </div>
   )
 }
