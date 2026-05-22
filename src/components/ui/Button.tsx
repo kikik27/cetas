@@ -15,6 +15,10 @@ const buttonVariants = cva(
         blue: 'bg-gradient-to-b from-[var(--ally)] to-[#2460a8] text-[#e8f4ff] shadow-[0_2px_0_#1a3f70,0_4px_12px_rgba(36,96,168,0.3)] border border-[rgba(100,180,255,0.2)]',
         ghost: 'bg-white/5 text-[var(--text-2)] border border-[var(--border)] hover:bg-white/9',
         danger: 'bg-gradient-to-b from-[#cf6d52] to-[#a24c35] text-[#fff3ee] shadow-[0_2px_0_#6a2f1f] border border-[rgba(255,140,120,0.2)]',
+        pixelGold: 'rounded-none border-2 border-[#5c3b0f] bg-[linear-gradient(180deg,#ffe59a_0%,#e8b847_100%)] text-[#2b1a07] shadow-[inset_-2px_-2px_0_#9f6a1d,inset_2px_2px_0_#fff1c7,0_4px_0_#6d4714] active:translate-y-[2px] active:shadow-[inset_-2px_-2px_0_#9f6a1d,inset_2px_2px_0_#fff1c7,0_2px_0_#6d4714]',
+        pixelBlue: 'rounded-none border-2 border-[#173a67] bg-[linear-gradient(180deg,#82bfff_0%,#3c78bc_100%)] text-[#eef7ff] shadow-[inset_-2px_-2px_0_#24548d,inset_2px_2px_0_#cde5ff,0_4px_0_#1a3f70] active:translate-y-[2px] active:shadow-[inset_-2px_-2px_0_#24548d,inset_2px_2px_0_#cde5ff,0_2px_0_#1a3f70]',
+        pixelDanger: 'rounded-none border-2 border-[#5b1f17] bg-[linear-gradient(180deg,#ea8d7a_0%,#b44735_100%)] text-[#fff3ef] shadow-[inset_-2px_-2px_0_#8a2f20,inset_2px_2px_0_#ffd2c8,0_4px_0_#6a2f1f] active:translate-y-[2px] active:shadow-[inset_-2px_-2px_0_#8a2f20,inset_2px_2px_0_#ffd2c8,0_2px_0_#6a2f1f]',
+        pixelGhost: 'rounded-none border-2 border-[rgba(120,74,22,0.5)] bg-[rgba(255,248,228,0.7)] text-[var(--text-2)] shadow-[inset_-2px_-2px_0_rgba(160,120,60,0.25),inset_2px_2px_0_rgba(255,255,245,0.7),0_4px_0_rgba(95,58,16,0.35)] active:translate-y-[2px] active:shadow-[inset_-2px_-2px_0_rgba(160,120,60,0.25),inset_2px_2px_0_rgba(255,255,245,0.7),0_2px_0_rgba(95,58,16,0.35)]',
       },
       size: {
         sm: 'h-9 px-3 text-xs rounded-lg',

@@ -23,15 +23,15 @@ export default function Controls({
     return (
       <div className="flex flex-col gap-2">
         <div className="flex gap-2">
-          <Button onClick={onReroll} variant="blue" size="md" className="flex-1 text-[12px]">
+          <Button onClick={onReroll} variant="pixelBlue" size="md" className="flex-1 text-[12px]">
             <Dices className="h-4 w-4" /> Reroll <span className="text-[10px] opacity-65">−2</span>
           </Button>
           {hasSelected && (
-            <Button onClick={onSell} variant="danger" size="md" className="w-12 px-0 text-[14px]" aria-label="Jual unit">
+            <Button onClick={onSell} variant="pixelDanger" size="md" className="w-12 px-0 text-[14px]" aria-label="Jual unit">
               <Coins className="h-4 w-4" />
             </Button>
           )}
-          <Button onClick={onBattle} variant="gold" size="md" className="flex-1 text-[13px] font-black tracking-wide">
+          <Button onClick={onBattle} variant="pixelGold" size="md" className="flex-1 text-[13px] font-black tracking-wide">
             <Swords className="h-4 w-4" /> BATTLE
           </Button>
         </div>

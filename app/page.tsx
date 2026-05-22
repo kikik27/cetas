@@ -45,7 +45,7 @@ export default function Home() {
       {/* ── CTA ──────────────────────────────────────── */}
       <section className="relative z-10 flex flex-col gap-3 px-4">
         <Link href="/game">
-          <Button variant="gold" size="lg" className="w-full anim-glow">
+            <Button variant="pixelGold" size="lg" className="w-full anim-glow">
             <Swords className="h-4 w-4" /> MULAI BERMAIN
           </Button>
         </Link>
