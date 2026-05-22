@@ -71,7 +71,7 @@ export function placeOnBoard(
       bch[selected.idx] = unit
       return {
         board: b, bench: bch, selected: null,
-        error: `⚠️ Slot penuh! Maksimal ${maxBoardSlots} unit di papan.`,
+        error: `⚠️ Board full! Maximum ${maxBoardSlots} units allowed.`,
       }
     }
   }
@@ -79,7 +79,7 @@ export function placeOnBoard(
   b[targetRow][targetCol] = unit
   return {
     board: b, bench: bch, selected: null,
-    log: `📍 ${unit.name} ditempatkan`,
+    log: `📍 ${unit.name} placed`,
   }
 }
 

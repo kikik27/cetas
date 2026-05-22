@@ -22,8 +22,8 @@ export default function Shop({ shop, onBuy }: ShopProps) {
     <div className="relic-frame rounded-xl px-3 py-2.5">
       {/* Header */}
       <div className="mb-2 flex items-center justify-between">
-        <span className="label">Toko Prajurit</span>
-        <span className="text-[9px] text-[var(--text-3)]">Tap untuk merekrut</span>
+        <span className="label">Recruit Shop</span>
+        <span className="text-[9px] text-[var(--text-3)]">Tap to recruit</span>
       </div>
 
       <div className="divider-gold mb-2.5" />
@@ -55,7 +55,7 @@ function ShopCard({ item, onBuy }: { item: ShopItem; onBuy: () => void }) {
               'active:scale-95 active:brightness-90',
             ]
       )}
-      aria-label={`Rekrut ${item.name} seharga ${item.cost} koin${item.sold ? ' (sudah direkrut)' : ''}`}
+      aria-label={`Recruit ${item.name} for ${item.cost} gold${item.sold ? ' (recruited)' : ''}`}
     >
       {/* Avatar */}
       <div className={cn(

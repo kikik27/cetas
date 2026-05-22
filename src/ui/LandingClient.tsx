@@ -54,10 +54,10 @@ export default function LandingClient() {
 
           <div className="flex flex-col gap-1">
             <h2 className="font-display text-[16px] font-bold uppercase tracking-[0.18em] text-[var(--gold-hi)]">
-              Musik Latar
+              Background Music
             </h2>
             <p className="text-[12px] leading-relaxed text-[var(--text-2)]">
-              Aktifkan musik untuk pengalaman<br />bermain yang lebih epik?
+              Enable music for a more epic<br />battle experience?
             </p>
           </div>
 
@@ -71,7 +71,7 @@ export default function LandingClient() {
               className="w-full font-black tracking-wider"
             >
               <Volume2 className="h-4 w-4" />
-              Ya, Aktifkan Musik
+              Enable Music
             </Button>
             <Button
               onClick={handleSkip}
@@ -79,7 +79,7 @@ export default function LandingClient() {
               size="md"
               className="w-full text-[12px]"
             >
-              Lewati
+              Skip
             </Button>
           </div>
         </div>

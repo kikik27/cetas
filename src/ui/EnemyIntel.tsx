@@ -18,9 +18,9 @@ const TRAIT_MAP: Record<string, { text: string; bg: string; border: string }> = 
 }
 
 function getThreat(totalAtk: number) {
-  if (totalAtk > 150) return { label: 'TINGGI', color: 'var(--enemy)',  bg: 'var(--enemy-dim)' }
-  if (totalAtk > 80)  return { label: 'SEDANG', color: 'var(--warn)',   bg: 'var(--warn-dim)' }
-  return                     { label: 'RENDAH', color: 'var(--ok)',     bg: 'var(--ok-dim)' }
+  if (totalAtk > 150) return { label: 'HIGH',   color: 'var(--enemy)', bg: 'var(--enemy-dim)' }
+  if (totalAtk > 80)  return { label: 'MEDIUM', color: 'var(--warn)',  bg: 'var(--warn-dim)' }
+  return                     { label: 'LOW',    color: 'var(--ok)',    bg: 'var(--ok-dim)' }
 }
 
 export default function EnemyIntel({ enemies, round }: EnemyIntelProps) {
@@ -35,7 +35,7 @@ export default function EnemyIntel({ enemies, round }: EnemyIntelProps) {
       <div className="mb-2.5 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-3.5 w-3.5 text-[var(--warn)]" />
-          <span className="label">Pasukan Musuh — Ronde {round}</span>
+          <span className="label">Enemy Forces — Round {round}</span>
         </div>
         <div
           className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"
@@ -59,7 +59,7 @@ export default function EnemyIntel({ enemies, round }: EnemyIntelProps) {
 
 function EnemyCard({ enemy }: { enemy: EnemyPreview }) {
   const ts       = TRAIT_MAP[enemy.traitLabel] ?? TRAIT_MAP.Melee
-  const spdLabel = enemy.spd >= 1.4 ? 'Cepat' : enemy.spd >= 0.9 ? 'Normal' : 'Lambat'
+  const spdLabel = enemy.spd >= 1.4 ? 'Fast' : enemy.spd >= 0.9 ? 'Normal' : 'Slow'
   const spdIcon  = enemy.spd >= 1.4 ? <Zap className="h-2.5 w-2.5" /> : enemy.spd < 0.9 ? <Shield className="h-2.5 w-2.5" /> : null
 
   return (

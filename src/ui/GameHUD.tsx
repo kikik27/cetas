@@ -78,24 +78,24 @@ export default function GameHUD() {
         show: true,
         title: 'Game Over',
         titleColor: 'var(--enemy)',
-        description: 'HP habis! Pertandingan selesai. Coba lagi?',
-        buttonLabel: 'Main Lagi',
+        description: 'HP depleted! The battle is over.',
+        buttonLabel: 'Play Again',
       })
     } else if (result.win) {
       setModal({
         show: true,
-        title: 'Menang!',
+        title: 'Victory!',
         titleColor: 'var(--ok)',
-        description: `${result.aliveCount} unit selamat! +${result.goldEarned} koin. Slot bertambah!`,
-        buttonLabel: round >= 5 ? 'Main Lagi' : `Ronde ${round + 1} →`,
+        description: `${result.aliveCount} units survived! +${result.goldEarned} gold. Slot unlocked!`,
+        buttonLabel: round >= 5 ? 'Play Again' : `Round ${round + 1} →`,
       })
     } else {
       setModal({
         show: true,
-        title: 'Kalah!',
+        title: 'Defeat!',
         titleColor: 'var(--warn)',
-        description: `−${result.hpLost} HP. Sisa HP: ${Math.max(0, hp - result.hpLost)}. Slot bertambah!`,
-        buttonLabel: round >= 5 ? 'Main Lagi' : `Ronde ${round + 1} →`,
+        description: `−${result.hpLost} HP. Remaining HP: ${Math.max(0, hp - result.hpLost)}. Slot unlocked!`,
+        buttonLabel: round >= 5 ? 'Play Again' : `Round ${round + 1} →`,
       })
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

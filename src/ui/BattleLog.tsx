@@ -15,7 +15,7 @@ export default function BattleLog({ log }: { log: string[] }) {
       className="surface min-h-[38px] max-h-[58px] overflow-y-auto rounded-xl px-3 py-2 text-[11px] leading-relaxed text-[var(--text-2)]"
       role="log"
       aria-live="polite"
-      aria-label="Log pertempuran"
+      aria-label="Battle log"
     >
       {log.map((line, i) => (
         <div

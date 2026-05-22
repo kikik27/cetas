@@ -27,7 +27,7 @@ export default function TopBar({ round, hp, gold, boardUnitCount, maxBoardSlots,
       <Link
         href="/"
         className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-[var(--border-gold)] bg-[rgba(200,146,42,0.08)] text-[var(--gold-mid)] transition-colors hover:bg-[rgba(200,146,42,0.16)]"
-        aria-label="Kembali ke menu"
+        aria-label="Back to menu"
       >
         <span className="text-base font-bold leading-none">‹</span>
       </Link>
@@ -64,13 +64,13 @@ export default function TopBar({ round, hp, gold, boardUnitCount, maxBoardSlots,
 
       {/* ── Round ── */}
       <div className="flex flex-col items-center rounded-lg border border-[var(--border)] bg-[rgba(255,255,255,0.03)] px-2.5 py-1.5">
-        <span className="text-[8px] font-semibold uppercase tracking-wider text-[var(--text-3)]">Ronde</span>
+        <span className="text-[8px] font-semibold uppercase tracking-wider text-[var(--text-3)]">Round</span>
         <span className="font-display text-[13px] font-bold text-[var(--text-1)]">{round}<span className="text-[10px] text-[var(--text-3)]">/5</span></span>
       </div>
 
       {/* ── Slots ── */}
       <div className="flex flex-col items-center rounded-lg border border-[var(--border)] bg-[rgba(255,255,255,0.03)] px-2.5 py-1.5">
-        <span className="text-[8px] font-semibold uppercase tracking-wider text-[var(--text-3)]">Slot</span>
+        <span className="text-[8px] font-semibold uppercase tracking-wider text-[var(--text-3)]">Slots</span>
         <span className="font-display text-[13px] font-bold text-[var(--ally)]">{boardUnitCount}<span className="text-[10px] text-[var(--text-3)]">/{maxBoardSlots}</span></span>
       </div>
 

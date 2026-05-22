@@ -44,7 +44,7 @@ export default function Controls({
               variant="pixelDanger"
               size="md"
               className="w-12 px-0"
-              aria-label="Jual unit terpilih"
+              aria-label="Sell selected unit"
             >
               <Coins className="h-4 w-4" />
             </Button>
@@ -58,12 +58,12 @@ export default function Controls({
             className="flex-1 text-[13px] font-black tracking-wide anim-glow"
           >
             <Swords className="h-4 w-4" />
-            SERANG!
+            BATTLE!
           </Button>
         </div>
 
         <p className="text-center text-[10px] text-[var(--text-3)]">
-          Tap unit → tap tile untuk menempatkan · Tap unit terpilih untuk jual
+          Tap unit → tap tile to place · Tap selected unit to sell
         </p>
       </div>
     )
@@ -118,7 +118,7 @@ export default function Controls({
 
       {/* Status label */}
       <span className="flex-shrink-0 text-[10px] font-semibold text-[var(--text-3)]">
-        {speedUp ? '⚡ Speed up!' : 'Berlangsung…'}
+        {speedUp ? '⚡ Speed up!' : 'In progress…'}
       </span>
     </div>
   )

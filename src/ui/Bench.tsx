@@ -18,7 +18,7 @@ export default function Bench({ bench, selected, onSlotClick }: BenchProps) {
     <div className="relic-frame rounded-xl px-3 py-2.5">
       {/* Header */}
       <div className="mb-2 flex items-center justify-between">
-        <span className="label">Bangku Cadangan</span>
+        <span className="label">Reserve Bench</span>
         <div className="flex items-center gap-1">
           <div className="flex gap-0.5">
             {bench.map((u, i) => (
@@ -41,7 +41,7 @@ export default function Bench({ bench, selected, onSlotClick }: BenchProps) {
       <div
         className="scroll-x flex flex-nowrap gap-1.5 pb-1"
         role="region"
-        aria-label="Bangku cadangan (geser horizontal)"
+        aria-label="Reserve bench (scroll horizontally)"
       >
         {bench.map((unit, i) => {
           const isSel = selected?.src === 'bench' && (selected as { src: 'bench'; idx: number }).idx === i
@@ -71,7 +71,7 @@ function BenchSlot({
   return (
     <button
       onClick={onClick}
-      title={unit ? `${unit.name} ⭐${unit.stars} | ATK:${unit.atkVal} HP:${unit.curHp}` : 'Kosong'}
+      title={unit ? `${unit.name} ⭐${unit.stars} | ATK:${unit.atkVal} HP:${unit.curHp}` : 'Empty'}
       className={cn(
         'flex flex-shrink-0 h-[72px] w-[62px] flex-col items-center justify-center gap-0.5 rounded-xl transition-all duration-150',
         !unit && [
@@ -87,7 +87,7 @@ function BenchSlot({
           'shadow-[0_0_12px_rgba(74,158,255,0.3)]',
         ],
       )}
-      aria-label={unit ? `${unit.name} bintang ${unit.stars}` : 'Slot kosong'}
+      aria-label={unit ? `${unit.name} star ${unit.stars}` : 'Empty slot'}
       aria-pressed={isSelected}
     >
       {unit ? (

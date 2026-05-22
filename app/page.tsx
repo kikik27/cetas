@@ -18,8 +18,8 @@ const LEAVES = [
 
 const FEATURES = [
   { icon: <Swords className="h-4 w-4" />, label: 'Auto Battle' },
-  { icon: <Shield className="h-4 w-4" />, label: 'Taktik Grid' },
-  { icon: <Trophy className="h-4 w-4" />, label: '5 Ronde' },
+  { icon: <Shield className="h-4 w-4" />, label: 'Tactics Grid' },
+  { icon: <Trophy className="h-4 w-4" />, label: '5 Rounds' },
 ]
 
 export default function Home() {
@@ -78,12 +78,12 @@ export default function Home() {
         <Link href="/game">
           <Button variant="pixelGold" size="lg" className="w-full font-black tracking-wider">
             <Swords className="h-5 w-5" />
-            MULAI BERMAIN
+            PLAY NOW
           </Button>
         </Link>
 
         <p className="text-center font-display text-[10px] uppercase tracking-[0.2em] text-[rgba(245,216,120,0.5)]">
-          Celo Tactics · Mini App Edition
+        Celo Tactics · Mini App Edition
         </p>
       </section>
 

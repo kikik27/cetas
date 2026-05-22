@@ -17,7 +17,7 @@ export default function RoundModal({
 }: RoundModalProps) {
   if (!show) return null
 
-  const isWin      = title.includes('Menang')
+  const isWin      = title.includes('Victory')
   const isGameOver = title.includes('Game Over')
   const btnVariant: 'pixelGold' | 'pixelDanger' = isWin ? 'pixelGold' : 'pixelDanger'
 
