@@ -72,11 +72,11 @@ export default function GameHUD() {
     if (phase !== 'battle' || battleRunning) return
     const result = evaluateBattleEnd(board, round)
     if (hp <= 0) {
-      setModal({ show: true, title: '☠️ Game Over', titleColor: '#ef4444', description: 'HP habis! Pertandingan selesai.', buttonLabel: 'Main Lagi' })
+      setModal({ show: true, title: '☠️ Game Over', titleColor: 'var(--enemy)', description: 'HP habis! Pertandingan selesai.', buttonLabel: 'Main Lagi' })
     } else if (result.win) {
-      setModal({ show: true, title: '🏆 Menang!', titleColor: '#22c55e', description: `${result.aliveCount} unit selamat! +🪙${result.goldEarned} koin. Slot bertambah!`, buttonLabel: round >= 5 ? 'Main Lagi' : `Ronde ${round + 1} →` })
+      setModal({ show: true, title: '🏆 Menang!', titleColor: 'var(--ok)', description: `${result.aliveCount} unit selamat! +🪙${result.goldEarned} koin. Slot bertambah!`, buttonLabel: round >= 5 ? 'Main Lagi' : `Ronde ${round + 1} →` })
     } else {
-      setModal({ show: true, title: '😤 Kalah!', titleColor: '#f97316', description: `−${result.hpLost} HP. Sisa HP: ${Math.max(0, hp - result.hpLost)}. Slot bertambah!`, buttonLabel: round >= 5 ? 'Main Lagi' : `Ronde ${round + 1} →` })
+      setModal({ show: true, title: '😤 Kalah!', titleColor: 'var(--warn)', description: `−${result.hpLost} HP. Sisa HP: ${Math.max(0, hp - result.hpLost)}. Slot bertambah!`, buttonLabel: round >= 5 ? 'Main Lagi' : `Ronde ${round + 1} →` })
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [battleRunning, phase])
@@ -85,35 +85,17 @@ export default function GameHUD() {
   const isPrep = phase === 'prep'
 
   return (
-    <div
-      className="flex flex-col mx-auto select-none"
-      style={{
-        maxWidth: 430,
-        minHeight: '100dvh',
-        paddingTop: 'max(env(safe-area-inset-top), 10px)',
-        paddingBottom: 'max(env(safe-area-inset-bottom), 10px)',
-        paddingLeft: 10,
-        paddingRight: 10,
-        gap: 8,
-      }}
-    >
-      <h1 className="sr-only">Celo Tactics</h1>
+    <div className="game-shell mx-auto flex select-none flex-col gap-2 px-2.5 pb-2.5 pt-2.5 [padding-top:max(env(safe-area-inset-top),10px)] [padding-bottom:max(env(safe-area-inset-bottom),10px)]">
+      <h1 className="sr-only">Cetas</h1>
 
-      {/* ── 1. Top HUD ── */}
+      {/* 1. Top HUD */}
       <TopBar round={round} hp={hp} gold={gold} boardUnitCount={boardCount} maxBoardSlots={maxBoardSlots} phase={phase} />
 
-      {/* ── 2. Enemy intel — only prep ── */}
+      {/* 2. Enemy intel — prep only */}
       {isPrep && <EnemyIntel enemies={enemyPreview} round={round} />}
 
-      {/* ── 3. Board — hero element ── */}
-      <div
-        className="flex-shrink-0 rounded-2xl overflow-hidden"
-        style={{
-          border: '1.5px solid rgba(212,170,80,0.22)',
-          boxShadow: '0 0 0 1px rgba(212,170,80,0.06) inset, 0 12px 40px rgba(0,0,0,0.6)',
-          background: '#080612',
-        }}
-      >
+      {/* 3. Board */}
+      <div className="board-frame flex-shrink-0 overflow-hidden rounded-2xl border border-[rgba(212,170,80,0.22)] bg-[#080612] shadow-[0_0_0_1px_rgba(212,170,80,0.06)_inset,0_12px_40px_rgba(0,0,0,0.6)]">
         <PixiBoard
           board={board} phase={phase} selected={selected}
           maxBoardSlots={maxBoardSlots} speedUp={speedUp}
@@ -122,23 +104,23 @@ export default function GameHUD() {
         />
       </div>
 
-      {/* ── 4. Bench ── */}
+      {/* 4. Bench */}
       <Bench bench={bench} selected={selected} onSlotClick={clickBenchSlot} />
 
-      {/* ── 5. Shop — only prep ── */}
+      {/* 5. Shop — prep only */}
       {isPrep && <Shop shop={shop} onBuy={buyUnit} />}
 
-      {/* ── 6. Controls / timer ── */}
+      {/* 6. Controls / timer */}
       <Controls
         phase={phase} hasSelected={selected !== null}
         battleRunning={battleRunning} secondsLeft={secondsLeft} speedUp={speedUp}
         onReroll={reroll} onSell={sellSelected} onBattle={startBattle}
       />
 
-      {/* ── 7. Log ── */}
+      {/* 7. Log */}
       <BattleLog log={log} />
 
-      {/* ── 8. Modal ── */}
+      {/* 8. Modal */}
       <RoundModal
         show={modal.show} title={modal.title} titleColor={modal.titleColor}
         description={modal.description} buttonLabel={modal.buttonLabel}

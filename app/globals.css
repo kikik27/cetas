@@ -94,6 +94,15 @@ body {
     linear-gradient(180deg, #0d0a18 0%, #070510 100%);
 }
 
+.game-shell {
+  max-width: 430px;
+  min-height: 100dvh;
+}
+
+.board-frame {
+  width: 100%;
+}
+
 /* ─── Surface cards ──────────────────────────────────────────────────────────── */
 .surface {
   background: var(--bg-panel);
