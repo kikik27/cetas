@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Badge } from '@/src/components/ui/Badge'
 import { Button } from '@/src/components/ui/Button'
 import { Swords, Shield, Trophy } from 'lucide-react'
-import LandingMusicLoader from '@/src/ui/LandingMusicLoader'
+import LandingClient from '@/src/ui/LandingClient'
 
 // ── Leaves: tumble and fall across the bottom half ────────────────────────────
 const LEAVES = [
@@ -76,7 +76,7 @@ export default function Home() {
       {/* ── CTA — rises last ── */}
       <section className="intro-cta relative z-10 flex flex-col gap-3 px-4 pb-6">
         <Link href="/game">
-          <Button variant="pixelGold" size="lg" className="w-full text-[15px] font-black tracking-widest anim-glow">
+          <Button variant="pixelGold" size="lg" className="w-full font-black tracking-wider">
             <Swords className="h-5 w-5" />
             MULAI BERMAIN
           </Button>
@@ -87,8 +87,8 @@ export default function Home() {
         </p>
       </section>
 
-      {/* ── Background music toggle ── */}
-      <LandingMusicLoader />
+      {/* ── Splash + music (client-only) ── */}
+      <LandingClient />
     </div>
   )
 }

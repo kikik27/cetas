@@ -5,23 +5,38 @@ import { useEffect } from 'react'
 
 interface ModalProps {
   show: boolean
-  onClose: () => void
+  onClose?: () => void
   children: React.ReactNode
+  /** If true, clicking backdrop does NOT close */
+  persistent?: boolean
 }
 
-export function Modal({ show, onClose, children }: ModalProps) {
+export function Modal({ show, onClose, children, persistent = false }: ModalProps) {
+  // Escape key
   useEffect(() => {
-    if (!show) return
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    if (!show || persistent) return
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose?.() }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [show, onClose])
+  }, [show, onClose, persistent])
 
   if (!show) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 anim-fade-up" onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} className={cn('w-full max-w-xs rounded-2xl border border-[var(--border)] bg-[var(--bg-panel)] p-6 text-center anim-pop')}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-5"
+      style={{ background: 'rgba(4,2,10,0.88)', backdropFilter: 'blur(6px)' }}
+      onClick={persistent ? undefined : onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      {/* Panel */}
+      <div
+        onClick={e => e.stopPropagation()}
+        className={cn(
+          'rpg-modal anim-pop w-full max-w-[320px] overflow-hidden',
+        )}
+      >
         {children}
       </div>
     </div>

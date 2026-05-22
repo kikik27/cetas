@@ -13,8 +13,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Celo Tactics",
+  title: "CETAS",
   description: "Auto-battler strategi roguelike berbasis grid — Fully On-Chain pada Celo L2",
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
