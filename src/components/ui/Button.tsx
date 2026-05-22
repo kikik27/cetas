@@ -10,7 +10,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        gold: 'bg-gradient-to-b from-[var(--gold)] to-[var(--gold-lo)] text-[#1a1208] shadow-[0_2px_0_var(--gold-lo),0_4px_14px_rgba(212,170,80,0.3)] border border-[rgba(255,220,100,0.25)]',
+        gold: 'relative bg-[linear-gradient(180deg,#f7d67a_0%,#e8bf57_40%,#bf8b2d_100%)] text-[#241706] shadow-[inset_0_1px_0_rgba(255,249,205,0.7),0_2px_0_#7b5518,0_10px_24px_rgba(212,168,66,0.45)] border border-[rgba(255,224,130,0.55)] hover:brightness-110',
         red: 'bg-gradient-to-b from-[var(--enemy)] to-[#a82424] text-[#fff0f0] shadow-[0_2px_0_#6e1414,0_4px_12px_rgba(168,36,36,0.35)] border border-[rgba(255,120,120,0.18)]',
         blue: 'bg-gradient-to-b from-[var(--ally)] to-[#2460a8] text-[#e8f4ff] shadow-[0_2px_0_#1a3f70,0_4px_12px_rgba(36,96,168,0.3)] border border-[rgba(100,180,255,0.2)]',
         ghost: 'bg-white/5 text-[var(--text-2)] border border-[var(--border)] hover:bg-white/9',

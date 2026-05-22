@@ -24,22 +24,23 @@ export default function Home() {
       <div className="mobile-shell">
         {/* ── Hero ─────────────────────────────────────── */}
         <section className="flex flex-col items-center gap-3 px-4 pt-8 pb-5">
-          <div className="relative h-24 w-24 overflow-hidden rounded-2xl border border-[var(--border-gold)] bg-[var(--bg-card)] p-1 anim-glow">
-            <Image src="/logo.png" alt="CETAS" fill className="object-contain" priority />
+          <div className="relic-frame relative h-24 w-24 overflow-hidden rounded-2xl p-1 anim-glow">
+            <Image src="/logo.png" alt="CETAS" fill className="object-contain p-1" priority />
           </div>
 
           <div className="text-center">
-            <h1 className="font-display text-[22px] font-bold tracking-wide text-[var(--gold)]">
+            <p className="font-display text-[10px] uppercase tracking-[0.28em] text-[var(--text-2)]">Dark Fantasy Auto Battler</p>
+            <h1 className="font-heading mt-1 text-[34px] font-semibold leading-[0.95] tracking-wide text-[var(--gold)]">
               CETAS
             </h1>
-            <p className="mt-0.5 text-[12px] leading-relaxed text-[var(--text-2)]">
-              Auto-battler taktikal. Susun pasukan, tempur otomatis, kalahkan musuh!
+            <p className="mt-1 text-[12px] leading-relaxed text-[var(--text-2)]">
+              Build squad. Fight realm. Earn glory.
             </p>
           </div>
 
           <div className="flex gap-2">
-            <Badge>Fase 1</Badge>
-            <Badge>Web2</Badge>
+            <Badge>Phase I</Badge>
+            <Badge>Mobile Mini App</Badge>
           </div>
         </section>
 
