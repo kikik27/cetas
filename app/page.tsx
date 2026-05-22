@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Badge } from '@/src/components/ui/Badge'
 import { Button } from '@/src/components/ui/Button'
 import { Card, CardContent } from '@/src/components/ui/Card'
+import { LayoutGrid, Swords, Trophy } from 'lucide-react'
 
 const HEROES = ['03', '07', '12', '18']
 
@@ -73,12 +74,12 @@ export default function Home() {
         <div className="flex w-full flex-col gap-3">
           <Link href="/game">
             <Button variant="gold" size="lg" className="w-full anim-glow">
-              ⚔️ MULAI BERMAIN
+              <Swords className="h-4 w-4" /> MULAI BERMAIN
             </Button>
           </Link>
           <div className="grid grid-cols-2 gap-2">
-            <Button variant="ghost" size="sm" disabled>🏆 Leaderboard</Button>
-            <Button variant="ghost" size="sm" disabled>🎴 Koleksi</Button>
+            <Button variant="ghost" size="sm" disabled><Trophy className="h-3 w-3" /> Leaderboard</Button>
+            <Button variant="ghost" size="sm" disabled><LayoutGrid className="h-3 w-3" /> Koleksi</Button>
           </div>
         </div>
       </div>
