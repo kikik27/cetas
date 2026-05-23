@@ -12,6 +12,7 @@ import Shop from './Shop'
 import Controls from './Controls'
 import BattleLog from './BattleLog'
 import RoundModal from './RoundModal'
+import { audioManager } from '@/src/lib/audioManager'
 
 const BATTLE_LIMIT_MS = 30_000
 
@@ -103,6 +104,17 @@ export default function GameHUD() {
 
   const boardCount = getBoardUnitCount(board)
   const isPrep     = phase === 'prep'
+
+  // ── Music: main on prep, battle on battle ─────────────────────────────────
+  useEffect(() => {
+    if (!audioManager.enabled) return
+    audioManager.play(battleRunning ? 'battle' : 'main')
+  }, [battleRunning])
+
+  // Switch to main track when game page mounts (landing → game transition)
+  useEffect(() => {
+    if (audioManager.enabled) audioManager.play('main')
+  }, [])
 
   return (
     <div className="game-shell mx-auto flex select-none flex-col gap-2 [padding-top:max(env(safe-area-inset-top),10px)] [padding-bottom:max(env(safe-area-inset-bottom),10px)]">

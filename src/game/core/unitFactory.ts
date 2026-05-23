@@ -45,6 +45,7 @@ export function makeUnit(def: UnitDef, stars: 1 | 2 | 3 = 1, enemy = false): Uni
     attackTimer: 0,
     dead: false,
     floats: [],
+    facingLeft: enemy,   // enemies spawn facing left (toward allies), allies face right
   }
 }
 

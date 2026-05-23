@@ -49,6 +49,8 @@ export interface Unit {
   attackTimer: number
   dead: boolean
   floats: FloatText[]
+  /** Which horizontal direction the unit is currently facing */
+  facingLeft: boolean
 }
 
 /** Flying arrow projectile */

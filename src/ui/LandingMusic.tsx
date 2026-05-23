@@ -1,41 +1,18 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { Volume2, VolumeX } from 'lucide-react'
+import { audioManager } from '@/src/lib/audioManager'
 
-interface LandingMusicProps {
-  /** Already-playing audio element from LandingClient */
-  audioEl?: HTMLAudioElement | null
-}
-
-export default function LandingMusic({ audioEl }: LandingMusicProps) {
-  const audioRef = useRef<HTMLAudioElement | null>(audioEl ?? null)
+export default function LandingMusic() {
   const [muted, setMuted] = useState(false)
 
-  useEffect(() => {
-    // Only create + autoplay if no audio was passed in
-    if (audioRef.current) return
-
-    const audio = new Audio('/assets/music/main_soundtrack.mp3')
-    audio.loop   = true
-    audio.volume = 0.35
-    audioRef.current = audio
-    audio.play().catch(() => {})
-
-    return () => {
-      audio.pause()
-      audio.src = ''
-    }
-  }, [])
-
   const toggleMute = () => {
-    const audio = audioRef.current
-    if (!audio) return
     if (muted) {
-      audio.volume = 0.35
+      audioManager.play('main')
       setMuted(false)
     } else {
-      audio.volume = 0
+      audioManager.stop()
       setMuted(true)
     }
   }

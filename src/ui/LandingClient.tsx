@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { Modal } from '@/src/components/ui/Modal'
 import { Button } from '@/src/components/ui/Button'
 import { Volume2 } from 'lucide-react'
+import { audioManager } from '@/src/lib/audioManager'
 
 const LandingMusic = dynamic(() => import('./LandingMusic'), { ssr: false })
 
@@ -13,27 +14,26 @@ const MODAL_DELAY_MS = 2200
 export default function LandingClient() {
   const [showModal,    setShowModal]    = useState(false)
   const [musicEnabled, setMusicEnabled] = useState(false)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
-    const audio = new Audio('/assets/music/main_soundtrack.mp3')
-    audio.loop    = true
-    audio.volume  = 0.35
-    audio.preload = 'auto'
-    audioRef.current = audio
-
-    const t = setTimeout(() => setShowModal(true), MODAL_DELAY_MS)
-
-    return () => {
-      clearTimeout(t)
-      audio.pause()
-      audio.src = ''
+    // Play main track if already enabled (returning from game page)
+    if (audioManager.enabled) {
+      audioManager.play('main')
+      setMusicEnabled(true)
+      return
     }
+    const t = setTimeout(() => setShowModal(true), MODAL_DELAY_MS)
+    return () => clearTimeout(t)
+  }, [])
+
+  // Stop battle music when landing page mounts (user came back from game)
+  useEffect(() => {
+    if (audioManager.enabled) audioManager.play('main')
   }, [])
 
   const handleEnter = () => {
-    // Directly inside onClick — browser always allows play() here
-    audioRef.current?.play().catch(err => console.warn('Audio play failed:', err))
+    audioManager.enable()
+    audioManager.play('main')
     setShowModal(false)
     setMusicEnabled(true)
   }
@@ -85,9 +85,7 @@ export default function LandingClient() {
         </div>
       </Modal>
 
-      {musicEnabled && audioRef.current && (
-        <LandingMusic audioEl={audioRef.current} />
-      )}
+      {musicEnabled && <LandingMusic />}
     </>
   )
 }

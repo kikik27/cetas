@@ -1,7 +1,6 @@
 import Link from 'next/link'
-import { Badge } from '@/src/components/ui/Badge'
 import { Button } from '@/src/components/ui/Button'
-import { Swords, Shield, Trophy } from 'lucide-react'
+import { Swords } from 'lucide-react'
 import LandingClient from '@/src/ui/LandingClient'
 
 // ── Leaves: tumble and fall across the bottom half ────────────────────────────
@@ -14,12 +13,6 @@ const LEAVES = [
   { src: '/assets/fx/leaf/6.png', cls: 'leaf l6', w: 22 },
   { src: '/assets/fx/leaf/1.png', cls: 'leaf l7', w: 18 },
   { src: '/assets/fx/leaf/3.png', cls: 'leaf l8', w: 20 },
-]
-
-const FEATURES = [
-  { icon: <Swords className="h-4 w-4" />, label: 'Auto Battle' },
-  { icon: <Shield className="h-4 w-4" />, label: 'Tactics Grid' },
-  { icon: <Trophy className="h-4 w-4" />, label: '5 Rounds' },
 ]
 
 export default function Home() {
@@ -57,20 +50,6 @@ export default function Home() {
 
         {/* ── Gold flash burst on logo impact ── */}
         <div className="intro-burst" aria-hidden />
-      </section>
-
-      {/* ── Feature pills — stagger in after logo ── */}
-      <section className="relative z-10 flex justify-center gap-2 px-4 pb-4">
-        {FEATURES.map((f, i) => (
-          <Badge
-            key={i}
-            className="intro-pill flex items-center gap-1 border-[rgba(200,146,42,0.3)] bg-[rgba(200,146,42,0.08)] text-[var(--gold-mid)]"
-            style={{ animationDelay: `${1.5 + i * 0.15}s` }}
-          >
-            {f.icon}
-            {f.label}
-          </Badge>
-        ))}
       </section>
 
       {/* ── CTA — rises last ── */}

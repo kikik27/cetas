@@ -7,7 +7,7 @@ import { COLS, ROWS, getAllUnits } from './boardSystem'
 // ─── Enemy generation ─────────────────────────────────────────────────────────
 
 export function generateEnemyPreview(round: number, maxBoardSlots: number): EnemyPreview[] {
-  const maxEnemy = Math.min(maxBoardSlots + 1, 6)
+  const maxEnemy = Math.min(maxBoardSlots + 2, 9)
   const count = Math.min(2 + round, maxEnemy)
   const tier = Math.min(Math.floor(round / 2), 2)
   const pool = UNIT_DEFS.filter(u => u.cost <= 1 + tier)
@@ -27,9 +27,9 @@ export function generateEnemyPreview(round: number, maxBoardSlots: number): Enem
 
 export function generateEnemies(board: BoardGrid, round: number, maxBoardSlots: number): BoardGrid {
   const b: BoardGrid = board.map(row => [...row])
-  for (let r = 0; r < 2; r++) for (let c = 0; c < COLS; c++) b[r][c] = null
+  for (let r = 0; r < 3; r++) for (let c = 0; c < COLS; c++) b[r][c] = null
 
-  const maxEnemy = Math.min(maxBoardSlots + 1, 6)
+  const maxEnemy = Math.min(maxBoardSlots + 2, 9)
   const count = Math.min(2 + round, maxEnemy)
   const tier = Math.min(Math.floor(round / 2), 2)
   const pool = UNIT_DEFS.filter(u => u.cost <= 1 + tier)
@@ -39,7 +39,7 @@ export function generateEnemies(board: BoardGrid, round: number, maxBoardSlots: 
     const stars: 1 | 2 = round >= 4 && Math.random() < 0.35 ? 2 : 1
     let placed = false
     for (let attempt = 0; attempt < 20 && !placed; attempt++) {
-      const r = Math.floor(Math.random() * 2)
+      const r = Math.floor(Math.random() * 3)   // rows 0–2
       const c = Math.floor(Math.random() * COLS)
       if (!b[r][c]) { b[r][c] = makeUnit(def, stars, true); placed = true }
     }
@@ -63,16 +63,35 @@ function stepToward(
   const dr = Math.sign(toR - fromR)
   const dc = Math.sign(toC - fromC)
 
-  // Prefer diagonal, then row-only, then col-only
+  // Priority 1: direct candidates toward target
   const candidates: [number, number][] = []
   if (dr !== 0 && dc !== 0) candidates.push([fromR + dr, fromC + dc])
   if (dr !== 0) candidates.push([fromR + dr, fromC])
   if (dc !== 0) candidates.push([fromR, fromC + dc])
 
   for (const [nr, nc] of candidates) {
-    if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue
-    if (board[nr][nc] === null) return [nr, nc]
+    if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && board[nr][nc] === null)
+      return [nr, nc]
   }
+
+  // Priority 2: fallback — try all 8 neighbours sorted by distance to target
+  // This breaks deadlocks when the direct path is fully blocked
+  const neighbours: [number, number, number][] = [] // [r, c, dist]
+  for (let dr2 = -1; dr2 <= 1; dr2++) {
+    for (let dc2 = -1; dc2 <= 1; dc2++) {
+      if (dr2 === 0 && dc2 === 0) continue
+      const nr = fromR + dr2, nc = fromC + dc2
+      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue
+      if (board[nr][nc] !== null) continue
+      // Skip cells that move away in both axes (pure retreat)
+      if (dr !== 0 && dc !== 0 && Math.sign(dr2) === -Math.sign(dr) && Math.sign(dc2) === -Math.sign(dc)) continue
+      const dist = Math.max(Math.abs(nr - toR), Math.abs(nc - toC))
+      neighbours.push([nr, nc, dist])
+    }
+  }
+  neighbours.sort((a, b) => a[2] - b[2])
+  if (neighbours.length > 0) return [neighbours[0][0], neighbours[0][1]]
+
   return null
 }
 
@@ -112,14 +131,18 @@ export function runBattleStep(board: BoardGrid, deltaMs = 16, speedMult = 1): Ba
   for (const { u, r, c } of alive) pos.set(u.uid, { r, c })
 
   // Board cell pixel size (must match renderer constants)
-  const CW = 672 / COLS
-  const CH = 384 / ROWS
+  const CW = 800 / COLS
+  const CH = 540 / ROWS
 
   const newProjectiles: import('../core/types').Projectile[] = []
   let projId = Date.now()
 
+  // Shuffle processing order each tick to prevent deterministic deadlocks
+  // where the same unit always moves first and blocks others
+  const aliveShuffled = [...alive].sort(() => Math.random() - 0.5)
+
   // ── Animation state machine ──────────────────────────────────────────────
-  for (const { u } of alive) {
+  for (const { u } of aliveShuffled) {
     u.anim += u.animDir
     if (u.anim > 20 || u.anim < 0) u.animDir *= -1
     if ((u.animState === 'attack' || u.animState === 'hurt') && u.animDone) {
@@ -128,7 +151,7 @@ export function runBattleStep(board: BoardGrid, deltaMs = 16, speedMult = 1): Ba
   }
 
   // ── Per-unit: move or attack ─────────────────────────────────────────────
-  for (const { u } of alive) {
+  for (const { u } of aliveShuffled) {
     if (u.dead) continue
 
     const myPos = pos.get(u.uid)!
@@ -155,20 +178,27 @@ export function runBattleStep(board: BoardGrid, deltaMs = 16, speedMult = 1): Ba
         if (next) {
           b[next[0]][next[1]] = u
           b[myPos.r][myPos.c] = null
-          // Store previous position for visual interpolation
           u.visualX = myPos.c * CW + CW / 2
           u.visualY = myPos.r * CH + CH / 2
           u.targetRow = next[0]
           u.targetCol = next[1]
           pos.set(u.uid, { r: next[0], c: next[1] })
+        } else {
+          // Fully blocked — refund the timer so unit retries next tick
+          // instead of waiting a full move cycle
+          u.moveTimer += 0.5
         }
       }
+      // Face toward target horizontally while moving
+      if (closest.c !== myPos.c) u.facingLeft = closest.c < myPos.c
       if (u.animState !== 'attack' && u.animState !== 'hurt') u.animState = 'run'
       continue
     }
 
     // ── ATTACK ──
     u.moveTimer = 0
+    // Face toward target when attacking
+    if (closest.c !== myPos.c) u.facingLeft = closest.c < myPos.c
     if (u.animState !== 'attack' && u.animState !== 'hurt') u.animState = 'idle'
 
     u.attackTimer += u.spd * secondsElapsed
