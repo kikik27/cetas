@@ -569,3 +569,56 @@ body {
    PIXEL IMAGE RENDERING
    ═══════════════════════════════════════════════════════════════ */
 .pixel { image-rendering: pixelated; image-rendering: crisp-edges; }
+
+/* ═══════════════════════════════════════════════════════════════
+   HERO SCENE — futuristic WebGPU component
+   ═══════════════════════════════════════════════════════════════ */
+.fade-in {
+  opacity: 0;
+  animation: fadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.fade-in-subtitle {
+  opacity: 0;
+  animation: fadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Scroll-to-explore button */
+.explore-btn {
+  position: absolute;
+  bottom: 36px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0;
+  animation: fadeIn 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  transition: color 0.3s ease;
+}
+.explore-btn:hover {
+  color: rgba(255, 255, 255, 0.85);
+}
+.explore-arrow {
+  display: block;
+}
+.arrow-svg {
+  animation: arrowBounce 2s ease-in-out infinite;
+}
+@keyframes arrowBounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(6px); }
+}
+
+/* z-60 utility for hero overlay text */
+.z-60 { z-index: 60; }

@@ -10,7 +10,10 @@
   },
   "dependencies": {
     "@pixi/react": "^8.0.5",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.6.1",
     "@types/howler": "^2.2.13",
+    "@types/three": "^0.184.1",
     "@vercel/analytics": "^2.0.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -21,6 +24,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "tailwind-merge": "^3.6.0",
+    "three": "^0.184.0",
     "zustand": "^5.0.13"
   },
   "devDependencies": {
