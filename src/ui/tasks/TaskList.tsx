@@ -1,14 +1,14 @@
 'use client'
 
-import { CheckSquare } from 'lucide-react'
+import { CheckSquare, Trophy } from 'lucide-react'
 import { useHomeStore, DAILY_TASK_DEFS } from '@/src/lib/homeStore'
 import TaskItem from './TaskItem'
 
 export default function TaskList() {
   const { taskStates } = useHomeStore()
   const completedCount = taskStates.filter(t => t.done).length
-  const totalReward    = DAILY_TASK_DEFS.reduce((s, d) => s + d.reward, 0)
-  const earnedReward   = DAILY_TASK_DEFS
+  const totalReward = DAILY_TASK_DEFS.reduce((s, d) => s + d.reward, 0)
+  const earnedReward = DAILY_TASK_DEFS
     .filter(d => taskStates.find(t => t.id === d.id)?.done)
     .reduce((s, d) => s + d.reward, 0)
   const allDone = completedCount === DAILY_TASK_DEFS.length
