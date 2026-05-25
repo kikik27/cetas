@@ -18,13 +18,13 @@
   --text-3:        #7a6a4e;
   --text-dim:      #4a3e2e;
 
-  --gold:          #c8922a;
-  --gold-hi:       #f5d878;
-  --gold-mid:      #e0b040;
-  --gold-lo:       #7a5518;
-  --gold-dim:      #4a3510;
-  --gold-glow:     rgba(220, 170, 50, 0.5);
-  --gold-glow-sm:  rgba(220, 170, 50, 0.25);
+  --gold:          #fecf3a;
+  --gold-hi:       #fffcc8;
+  --gold-mid:      #fdd73d;
+  --gold-lo:       #e7851a;
+  --gold-dim:      #ad5214;
+  --gold-glow:     rgba(254, 207, 58, 0.46);
+  --gold-glow-sm:  rgba(253, 180, 46, 0.24);
 
   --ally:          #4a9eff;
   --ally-dim:      rgba(74, 158, 255, 0.15);
