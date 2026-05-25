@@ -6,25 +6,25 @@
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  --bg:            #0d0a0f;
-  --bg-deep:       #080610;
-  --bg-panel:      rgba(18, 13, 28, 0.96);
-  --bg-card:       rgba(22, 16, 36, 0.94);
-  --bg-overlay:    rgba(4, 2, 10, 0.82);
+  --bg:            #06172d;
+  --bg-deep:       #041021;
+  --bg-panel:      rgba(8, 42, 90, 0.90);
+  --bg-card:       rgba(10, 35, 64, 0.92);
+  --bg-overlay:    rgba(4, 23, 45, 0.78);
 
-  --text:          #e8dfc8;
-  --text-1:        #f0e8d0;
-  --text-2:        #b8a882;
-  --text-3:        #7a6a4e;
-  --text-dim:      #4a3e2e;
+  --text:          #e8f4ff;
+  --text-1:        #f5fbff;
+  --text-2:        #a8d7f5;
+  --text-3:        #7db7df;
+  --text-dim:      #4f84aa;
 
-  --gold:          #fecf3a;
+  --gold:          #e4c87a;
   --gold-hi:       #fffcc8;
-  --gold-mid:      #fdd73d;
+  --gold-mid:      #fecf3a;
   --gold-lo:       #e7851a;
   --gold-dim:      #ad5214;
-  --gold-glow:     rgba(254, 207, 58, 0.46);
-  --gold-glow-sm:  rgba(253, 180, 46, 0.24);
+  --gold-glow:     rgba(25, 215, 255, 0.28);
+  --gold-glow-sm:  rgba(228, 200, 122, 0.20);
 
   --ally:          #4a9eff;
   --ally-dim:      rgba(74, 158, 255, 0.15);
@@ -37,10 +37,10 @@
   --purple:        #9b6dff;
   --purple-dim:    rgba(155, 109, 255, 0.15);
 
-  --border:        rgba(180, 140, 60, 0.18);
-  --border-gold:   rgba(200, 146, 42, 0.45);
-  --border-bright: rgba(245, 216, 120, 0.6);
-  --border-dark:   rgba(255, 255, 255, 0.06);
+  --border:        rgba(11, 78, 162, 0.32);
+  --border-gold:   rgba(228, 200, 122, 0.45);
+  --border-bright: rgba(25, 215, 255, 0.5);
+  --border-dark:   rgba(255, 255, 255, 0.08);
 
   --prep-bg:       rgba(74, 158, 255, 0.12);
   --prep-text:     #82c4ff;
