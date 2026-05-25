@@ -117,7 +117,7 @@ export default function GameHUD() {
   }, [])
 
   return (
-    <div className="game-shell mx-auto flex select-none flex-col gap-2 [padding-top:max(env(safe-area-inset-top),10px)] [padding-bottom:max(env(safe-area-inset-bottom),10px)]">
+    <div className="relative z-10 flex flex-1 select-none flex-col gap-2 px-2.5 [padding-top:max(env(safe-area-inset-top),10px)] [padding-bottom:max(env(safe-area-inset-bottom),10px)]">
       <h1 className="sr-only">Celo Tactics</h1>
 
       {/* 1 ── Top HUD */}

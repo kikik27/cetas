@@ -5,9 +5,5 @@ import dynamic from 'next/dynamic'
 const GameHUD = dynamic(() => import('../../src/ui/GameHUD'), { ssr: false })
 
 export default function GamePage() {
-  return (
-    <main className="game-bg game-scroll app-frame-outer">
-      <GameHUD />
-    </main>
-  )
+  return <GameHUD />
 }
