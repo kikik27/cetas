@@ -1,0 +1,14 @@
+{
+  "name": "celo-tactics-contracts",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "compile": "forge build",
+    "test": "forge test",
+    "deploy:sepolia": "forge script script/Deploy.s.sol --rpc-url celo_sepolia --broadcast --verify",
+    "deploy:mainnet": "forge script script/Deploy.s.sol --rpc-url celo --broadcast --verify",
+    "clean": "forge clean"
+  },
+  "devDependencies": {},
+  "dependencies": {}
+}
