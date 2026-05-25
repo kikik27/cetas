@@ -17,8 +17,11 @@ export default function HomeClient() {
         
       </section>
 
-      <DailyChest />
-      <QuestPreview />
+      {/* ── Daily cards — 2 column ── */}
+      <section className="grid grid-cols-2 gap-3">
+        <DailyChest />
+        <QuestPreview />
+      </section>
 
       <BottomNav />
     </>

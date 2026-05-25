@@ -14,10 +14,8 @@ interface NavItem {
 
 const ITEMS: NavItem[] = [
   { href: '/home',        label: 'Home',   icon: Home,        enabled: true  },
-  { href: '/game',        label: 'Battle', icon: Swords,      enabled: true  },
   { href: '/tasks',       label: 'Quests', icon: CheckSquare, enabled: true  },
   { href: '/leaderboard', label: 'Ranks',  icon: Trophy,      enabled: true  },
-  { href: '/collection',  label: 'Collect',icon: Star,        enabled: false },
 ]
 
 export default function BottomNav() {
