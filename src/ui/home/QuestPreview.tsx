@@ -19,12 +19,12 @@ export default function QuestPreview() {
       {/* Icon — task asset */}
       <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg
                       border border-[rgba(61,186,106,0.35)] bg-[rgba(61,186,106,0.1)]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src="/assets/ui/task.png"
           alt="Daily quests"
           width={24}
           height={24}
+          unoptimized
           className="pixel object-contain"
         />
       </div>

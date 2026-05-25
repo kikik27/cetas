@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { Gift } from 'lucide-react'
 import { Modal } from '@/src/components/ui/Modal'
 import { Button } from '@/src/components/ui/Button'
@@ -31,12 +32,12 @@ export default function DailyChest() {
           <div className="chest-open-anim flex h-14 w-14 items-center justify-center rounded-2xl
                           border-2 border-[var(--border-gold)] bg-[rgba(200,146,42,0.12)]
                           shadow-[0_0_24px_rgba(200,146,42,0.4)]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src="/assets/ui/opened_chest.png"
               alt="Opened chest"
               width={40}
               height={40}
+              unoptimized
               className="pixel object-contain"
             />
           </div>
@@ -73,12 +74,12 @@ export default function DailyChest() {
             : 'border-[var(--border-gold)] bg-[rgba(200,146,42,0.12)]',
           animating && 'chest-bounce'
         )}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={chestOpened ? '/assets/ui/opened_chest.png' : '/assets/ui/closed_chest.png'}
             alt={chestOpened ? 'Opened chest' : 'Closed chest'}
             width={24}
             height={24}
+            unoptimized
             className="pixel object-contain"
           />
         </div>

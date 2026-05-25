@@ -30,6 +30,11 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        {/* home_bg preload — CSS background-image tidak di-handle next/image */}
+        <link rel="preload" as="image" href="/home_bg.png" />
+        <link rel="preload" as="image" href="/landing-bg.jpg" />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

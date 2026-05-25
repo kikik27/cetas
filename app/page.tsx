@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import LandingClient from '@/src/ui/LandingClient'
 import LandingGate from '@/src/ui/LandingGate'
 
@@ -21,9 +22,8 @@ export default function RootPage() {
         <div className="landing-overlay" aria-hidden />
 
         {LEAVES.map((l, i) => (
-          // eslint-disable-next-line @next/next/no-img-element
           <div key={`leaf-${i}`} className={l.cls} aria-hidden>
-            <img src={l.src} alt="" style={{ width: l.w, height: 'auto' }} />
+            <Image src={l.src} alt="" loading="lazy" width={l.w} height={20} unoptimized />
           </div>
         ))}
 
@@ -33,10 +33,12 @@ export default function RootPage() {
             <p className="intro-subtitle font-display text-[10px] uppercase tracking-[0.32em] text-[rgba(125,212,248,0.7)]">
               Tactical Auto Battler · Celo L2
             </p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src="/logo.png"
               alt="CETAS"
+              loading="eager"
+              width={300}
+              height={80}
               className="intro-logo w-full max-w-[300px] object-contain"
             />
             <div className="intro-burst" aria-hidden />

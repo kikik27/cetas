@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { Trophy, Swords, Shield, Flame, Medal, Star } from 'lucide-react'
 import { Button } from '@/src/components/ui/Button'
@@ -49,8 +50,16 @@ export default function LeaderboardClient() {
       <div className="flex flex-shrink-0 items-center gap-3">
         <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center
                         rounded-xl border border-[rgba(200,146,42,0.3)] bg-[rgba(200,146,42,0.08)]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/assets/ui/leaderboard.png" alt="" width={18} height={18} className="pixel object-contain" aria-hidden />
+          <Image
+            src="/assets/ui/leaderboard.png"
+            alt=""
+            width={18}
+            height={18}
+            loading="eager"
+            unoptimized
+            className="pixel object-contain"
+            aria-hidden
+          />
         </div>
         <div>
           <h1 className="font-display text-[15px] font-bold uppercase tracking-[0.15em] text-[var(--gold-hi)]">
@@ -102,11 +111,14 @@ export default function LeaderboardClient() {
                 {i === 2 && <Star   className="h-4 w-4 inline text-[#c8906a]" />}
                 {i >= 3  && `${i + 1}`}
               </span>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={`/assets/ui/avatars/avatar-${pad}.png`}
-                alt="" aria-hidden
-                className="pixel h-8 w-8 flex-shrink-0 rounded-lg border border-[var(--border)]"
+                alt=""
+                aria-hidden
+                width={32}
+                height={32}
+                unoptimized
+                className="pixel flex-shrink-0 rounded-lg border border-[var(--border)]"
               />
               <div className="min-w-0 flex-1">
                 <p className={cn(

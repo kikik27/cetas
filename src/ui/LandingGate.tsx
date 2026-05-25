@@ -174,6 +174,7 @@ export default function LandingGate({ className }: Props) {
                   src={`/assets/ui/avatars/avatar-${pad}.png`}
                   alt="Selected avatar"
                   width={56} height={56}
+                  unoptimized
                   className="pixel h-full w-full object-cover"
                 />
               </div>
@@ -205,6 +206,7 @@ export default function LandingGate({ className }: Props) {
                       src={`/assets/ui/avatars/avatar-${p}.png`}
                       alt={`Avatar ${n}`}
                       width={52} height={52}
+                      unoptimized
                       className="pixel w-full h-auto"
                     />
                     {active && <div className="absolute inset-0 bg-[rgba(200,146,42,0.15)]" />}

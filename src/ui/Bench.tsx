@@ -98,6 +98,7 @@ function BenchSlot({
               src={`/assets/ui/avatars/avatar-${unit.avatarIndex}.png`}
               alt={unit.name}
               width={64} height={64}
+              unoptimized
               className="pixel h-full w-full object-cover"
             />
             {unit.stars > 1 && (

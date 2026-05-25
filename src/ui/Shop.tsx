@@ -68,6 +68,7 @@ function ShopCard({ item, onBuy }: { item: ShopItem; onBuy: () => void }) {
           src={`/assets/ui/avatars/avatar-${item.avatarIndex}.png`}
           alt={item.name}
           width={64} height={64}
+          unoptimized
           className="pixel h-full w-full object-cover"
         />
       </div>
@@ -97,7 +98,7 @@ function ShopCard({ item, onBuy }: { item: ShopItem; onBuy: () => void }) {
 
       {/* Cost badge */}
       <div className="flex items-center gap-0.5 rounded-full border border-[rgba(200,146,42,0.35)] bg-[rgba(200,146,42,0.12)] px-2 py-[3px]">
-        <Image src="/assets/ui/icons/icon-03.png" alt="" width={10} height={10} className="pixel" aria-hidden />
+        <Image src="/assets/ui/icons/icon-03.png" alt="" width={10} height={10} unoptimized className="pixel" aria-hidden />
         <span className="font-display text-[11px] font-bold text-[var(--gold-hi)]">{item.cost}</span>
       </div>
     </button>

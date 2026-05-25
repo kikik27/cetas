@@ -53,8 +53,7 @@ export default function FriendsClient() {
       <div className="flex flex-shrink-0 items-center gap-2">
         <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl
                         border border-[rgba(200,146,42,0.3)] bg-[rgba(200,146,42,0.08)]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/assets/ui/friends.png" alt="" width={18} height={18} className="pixel object-contain" aria-hidden />
+          <Image src="/assets/ui/friends.png" alt="" width={18} height={18} loading="eager" unoptimized className="pixel object-contain" aria-hidden />
         </div>
         <h1 className="font-display text-[13px] font-bold uppercase tracking-[0.15em] text-[var(--gold-hi)]">
           Friends & Referral
@@ -252,6 +251,7 @@ function FriendRow({ friend, onClaim }: { friend: Friend; onClaim: () => void })
           src={`/assets/ui/avatars/avatar-${pad}.png`}
           alt={friend.name}
           width={36} height={36}
+          unoptimized
           className="pixel h-full w-full object-cover"
         />
       </div>

@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/src/lib/utils'
@@ -43,12 +44,13 @@ export default function BottomNav() {
               'py-2.5 px-1 transition-all duration-150 no-underline',
             )}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={item.src}
               alt={item.alt}
               width={22}
               height={22}
+              loading="eager"
+              unoptimized
               className={cn(
                 'pixel object-contain transition-all duration-150',
                 isCurrent

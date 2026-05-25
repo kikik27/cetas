@@ -37,6 +37,8 @@ export default function PlayerCard() {
             src={`/assets/ui/avatars/avatar-${pad}.png`}
             alt="Player avatar"
             width={64} height={64}
+            loading="eager"
+            unoptimized
             className="pixel h-full w-full object-cover"
           />
           <div className="absolute inset-0 flex items-center justify-center

@@ -74,6 +74,7 @@ function EnemyCard({ enemy }: { enemy: EnemyPreview }) {
           src={`/assets/ui/avatars/avatar-${enemy.avatarIndex}.png`}
           alt={enemy.name}
           width={64} height={64}
+          unoptimized
           className="pixel h-full w-full object-cover"
         />
         {enemy.stars > 1 && (

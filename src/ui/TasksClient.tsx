@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useHomeStore, DAILY_TASK_DEFS } from '@/src/lib/homeStore'
 import TaskItem from './tasks/TaskItem'
 import BottomNav from './home/BottomNav'
@@ -14,8 +15,7 @@ export default function TasksClient() {
       <div className="flex flex-shrink-0 items-center gap-2 px-1">
         <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl
                         border border-[rgba(200,146,42,0.3)] bg-[rgba(200,146,42,0.08)]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/assets/ui/task.png" alt="" width={18} height={18} className="pixel object-contain" aria-hidden />
+          <Image src="/assets/ui/task.png" alt="" width={18} height={18} loading="eager" unoptimized className="pixel object-contain" aria-hidden />
         </div>
         <h1 className="font-display text-[13px] font-bold uppercase tracking-[0.15em] text-[var(--gold-hi)]">
           Daily Quests

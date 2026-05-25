@@ -1,12 +1,12 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { Lock, Swords, Users } from 'lucide-react'
 import PlayerCard   from './home/PlayerCard'
 import DailyChest  from './home/DailyChest'
 import QuestPreview from './home/QuestPreview'
 import BottomNav   from './home/BottomNav'
-import Image from 'next/image'
 
 const LEAVES = [
   { src: '/assets/fx/leaf/1.png', cls: 'leaf l1', w: 18 },
@@ -32,23 +32,24 @@ export default function HomeClient() {
       <section className="relative flex flex-1 flex-col items-center overflow-hidden pt-2">
         {/* Falling leaves */}
         {LEAVES.map((l, i) => (
-          // eslint-disable-next-line @next/next/no-img-element
           <div key={i} className={l.cls} aria-hidden>
-            <img src={l.src} alt="" style={{ width: l.w, height: 'auto' }} />
+            <Image src={l.src} alt="" loading="lazy" width={l.w} height={20} unoptimized />
           </div>
         ))}
 
         {/* Arena image — upper-center, constrained size */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <Image
           src="/play_arena.png"
           alt="Play Arena"
+          loading="eager"
+          width={400}
+          height={300}
           className="object-contain object-top drop-shadow-[0_8px_32px_rgba(200,146,42,0.25)]"
           style={{ width: '100%', maxHeight: 300 }}
         />
 
         {/* Buttons — pinned to bottom */}
-        <div className="absolute bottom-16 grid w-full grid-cols-2 gap-2 px-1 pb-1">
+        <div className="absolute bottom-10 grid w-full grid-cols-2 gap-2 px-1 pb-1">
           <Link
             href="/game"
             className="flex items-center justify-center gap-1.5 rounded-xl border
