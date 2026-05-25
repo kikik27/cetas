@@ -29,13 +29,13 @@ export default function RoundModal({
       aria-modal="true"
       aria-labelledby="modal-title"
     >
-      <div className="anim-pop w-full max-w-[300px] overflow-hidden rounded-2xl border border-[var(--border-gold)] bg-[rgba(14,10,24,0.98)] shadow-[0_0_80px_rgba(0,0,0,0.9),0_0_40px_rgba(200,146,42,0.08)]">
+      <div className="anim-pop w-full max-w-[300px] overflow-hidden rounded-2xl border border-[var(--border-gold)] bg-[var(--bg-panel)] shadow-[0_0_64px_rgba(6,23,45,0.72),0_0_34px_var(--gold-glow-sm)]">
 
         {/* Top accent bar */}
         <div className="h-1 w-full" style={{ background: titleColor }} />
 
         {/* Inner border */}
-        <div className="m-[1px] rounded-[14px] border border-[rgba(200,146,42,0.1)]">
+        <div className="m-[1px] rounded-[14px] border border-[var(--border)]">
           <div className="flex flex-col items-center gap-4 px-6 py-6 text-center">
 
             {/* Icon */}

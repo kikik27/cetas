@@ -25,7 +25,7 @@ export function Modal({ show, onClose, children, persistent = false }: ModalProp
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-5"
-      style={{ background: 'rgba(4,2,10,0.88)', backdropFilter: 'blur(6px)' }}
+      style={{ background: 'var(--overlay)', backdropFilter: 'blur(6px)' }}
       onClick={persistent ? undefined : onClose}
       role="dialog"
       aria-modal="true"
