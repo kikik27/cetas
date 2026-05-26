@@ -3,34 +3,34 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import { Users, Copy, Check, Gift, UserPlus, Crown, Ticket } from 'lucide-react'
-import { useHomeStore, type Friend } from '@/src/lib/homeStore'
+import { useFriends, useClaimReferralReward, useSubmitReferralCode } from '@/src/hooks/useFriends'
+import { useWallet } from '@/src/providers/WalletProvider'
 import { Button } from '@/src/components/ui/Button'
 import { cn } from '@/src/lib/utils'
 import BottomNav from './home/BottomNav'
+import type { FriendDTO } from '@/src/lib/api-types'
 
 const REFERRAL_REWARD = 100
 
-const MOCK_FRIENDS: Friend[] = [
-  { id: 'f1', name: 'Ironclad', avatarIdx: 3,  joinedAt: '2026-05-20', rewarded: false },
-  { id: 'f2', name: 'Phantom',  avatarIdx: 7,  joinedAt: '2026-05-22', rewarded: true  },
-  { id: 'f3', name: 'Warlord',  avatarIdx: 12, joinedAt: '2026-05-24', rewarded: false },
-]
-
 export default function FriendsClient() {
-  const {
-    playerName, referralCode,
-    friends: storedFriends,
-    claimReferralReward,
-    usedReferralCode, submitReferralCode,
-  } = useHomeStore()
+  const { player, authStatus } = useWallet()
+  const isReady = authStatus === 'authenticated'
+
+  const { data: friends = [] }  = useFriends(isReady)
+  const claimMutation           = useClaimReferralReward()
+  const referralMutation        = useSubmitReferralCode()
 
   const [copied,     setCopied]     = useState(false)
   const [inputCode,  setInputCode]  = useState('')
   const [codeStatus, setCodeStatus] = useState<'idle' | 'success' | 'error'>('idle')
 
-  const friends      = storedFriends.length > 0 ? storedFriends : MOCK_FRIENDS
+  const referralCode = player?.referralCode ?? '------'
   const pendingCount = friends.filter(f => !f.rewarded).length
   const claimedCount = friends.filter(f => f.rewarded).length
+
+  // Check if this player already used a referral code
+  // (server returns 400 "Already used" if they try again)
+  const [usedCode, setUsedCode] = useState<string | null>(null)
 
   function handleCopy() {
     navigator.clipboard.writeText(referralCode).catch(() => {})
@@ -38,18 +38,21 @@ export default function FriendsClient() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  function handleSubmitCode() {
+  async function handleSubmitCode() {
     if (!inputCode.trim()) return
-    const ok = submitReferralCode(inputCode)
-    setCodeStatus(ok ? 'success' : 'error')
-    if (ok) setInputCode('')
+    try {
+      await referralMutation.mutateAsync(inputCode)
+      setCodeStatus('success')
+      setUsedCode(inputCode.toUpperCase())
+      setInputCode('')
+    } catch {
+      setCodeStatus('error')
+    }
     setTimeout(() => setCodeStatus('idle'), 3000)
   }
 
   return (
     <div className="flex h-full flex-col gap-3">
-
-      {/* ── Fixed header ── */}
       <div className="flex flex-shrink-0 items-center gap-2">
         <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl
                         border border-[rgba(200,146,42,0.3)] bg-[rgba(200,146,42,0.08)]">
@@ -63,9 +66,7 @@ export default function FriendsClient() {
         </span>
       </div>
 
-      {/* ── Scrollable body — everything from Invite & Earn down ── */}
       <div className="game-scroll flex flex-1 flex-col gap-3 overflow-y-auto">
-
         {/* Invite & Earn card */}
         <section className="relic-frame flex flex-shrink-0 flex-col gap-3 px-4 py-4">
           <div className="flex items-center gap-2">
@@ -78,26 +79,18 @@ export default function FriendsClient() {
               +{REFERRAL_REWARD} pts / friend
             </span>
           </div>
-
           <div className="divider-gold" />
-
-          {/* Stats */}
           <div className="grid grid-cols-2 gap-2">
-            <div className="flex flex-col items-center rounded-xl border border-[var(--border)]
-                            bg-[rgba(4,16,33,0.6)] py-2.5">
+            <div className="flex flex-col items-center rounded-xl border border-[var(--border)] bg-[rgba(4,16,33,0.6)] py-2.5">
               <span className="font-display text-[20px] font-bold text-[var(--gold-hi)]">{pendingCount}</span>
               <span className="text-[9px] uppercase tracking-wider text-[var(--text-3)]">Pending reward</span>
             </div>
-            <div className="flex flex-col items-center rounded-xl border border-[var(--border)]
-                            bg-[rgba(4,16,33,0.6)] py-2.5">
+            <div className="flex flex-col items-center rounded-xl border border-[var(--border)] bg-[rgba(4,16,33,0.6)] py-2.5">
               <span className="font-display text-[20px] font-bold text-[var(--ok)]">{claimedCount}</span>
               <span className="text-[9px] uppercase tracking-wider text-[var(--text-3)]">Claimed</span>
             </div>
           </div>
-
-          {/* Code display */}
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-[var(--border)]
-                          bg-[rgba(4,16,33,0.7)] px-4 py-3">
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-[rgba(4,16,33,0.7)] px-4 py-3">
             <div>
               <p className="text-[9px] uppercase tracking-wider text-[var(--text-3)]">Your code</p>
               <p className="font-mono text-[22px] font-black tracking-[0.25em] text-[var(--gold-hi)]">
@@ -118,8 +111,6 @@ export default function FriendsClient() {
               {copied ? 'Copied!' : 'Copy'}
             </button>
           </div>
-
-          {/* Share button */}
           <Button
             variant="pixelGold"
             size="md"
@@ -128,7 +119,7 @@ export default function FriendsClient() {
               if (navigator.share) {
                 navigator.share({
                   title: 'Join me on CETAS!',
-                  text: `${playerName} invites you to play CETAS — the tactical auto-battler on Celo L2. Use my referral code: ${referralCode}`,
+                  text: `${player?.name ?? 'A friend'} invites you to play CETAS — the tactical auto-battler on Celo L2. Use my referral code: ${referralCode}`,
                 })
               } else {
                 handleCopy()
@@ -149,14 +140,13 @@ export default function FriendsClient() {
             </span>
           </div>
 
-          {usedReferralCode ? (
-            <div className="flex items-center gap-2 rounded-xl border border-[rgba(61,186,106,0.3)]
-                            bg-[rgba(61,186,106,0.08)] px-3 py-2.5">
+          {usedCode ? (
+            <div className="flex items-center gap-2 rounded-xl border border-[rgba(61,186,106,0.3)] bg-[rgba(61,186,106,0.08)] px-3 py-2.5">
               <Check className="h-4 w-4 flex-shrink-0 text-[var(--ok)]" />
               <div>
                 <p className="font-display text-[11px] font-bold text-[var(--ok)]">Code applied!</p>
                 <p className="text-[9px] text-[var(--text-3)]">
-                  Used: <span className="font-mono font-bold">{usedReferralCode}</span>
+                  Used: <span className="font-mono font-bold">{usedCode}</span>
                   {' '}· +{REFERRAL_REWARD} pts earned
                 </p>
               </div>
@@ -185,7 +175,7 @@ export default function FriendsClient() {
                   variant="pixelGold"
                   size="sm"
                   onClick={handleSubmitCode}
-                  disabled={!inputCode.trim()}
+                  disabled={!inputCode.trim() || referralMutation.isPending}
                   className="px-4 font-black"
                 >
                   Apply
@@ -193,7 +183,7 @@ export default function FriendsClient() {
               </div>
               {codeStatus === 'error' && (
                 <p className="text-[10px] text-[var(--enemy)]">
-                  Invalid code or you can&apos;t use your own code.
+                  Invalid code or already used.
                 </p>
               )}
               {codeStatus === 'success' && (
@@ -221,21 +211,22 @@ export default function FriendsClient() {
               <FriendRow
                 key={friend.id}
                 friend={friend}
-                onClaim={() => claimReferralReward(friend.id)}
+                onClaim={() => claimMutation.mutate(friend.id)}
+                claiming={claimMutation.isPending && claimMutation.variables === friend.id}
               />
             ))
           )}
         </div>
-
-      </div>{/* end scrollable body */}
+      </div>
 
       <BottomNav />
     </div>
   )
 }
 
-// ── Friend row ────────────────────────────────────────────────────────────────
-function FriendRow({ friend, onClaim }: { friend: Friend; onClaim: () => void }) {
+function FriendRow({
+  friend, onClaim, claiming,
+}: { friend: FriendDTO; onClaim: () => void; claiming: boolean }) {
   const pad      = String(friend.avatarIdx).padStart(2, '0')
   const joinDate = new Date(friend.joinedAt).toLocaleDateString('en', { month: 'short', day: 'numeric' })
 
@@ -247,15 +238,8 @@ function FriendRow({ friend, onClaim }: { friend: Friend; onClaim: () => void })
         : 'border-[var(--border-gold)] bg-[rgba(8,28,58,0.88)]'
     )}>
       <div className="relative h-9 w-9 flex-shrink-0 overflow-hidden rounded-xl border-2 border-[var(--border-gold)]">
-        <Image
-          src={`/assets/ui/avatars/avatar-${pad}.png`}
-          alt={friend.name}
-          width={36} height={36}
-          unoptimized
-          className="pixel h-full w-full object-cover"
-        />
+        <Image src={`/assets/ui/avatars/avatar-${pad}.png`} alt={friend.name} width={36} height={36} unoptimized className="pixel h-full w-full object-cover" />
       </div>
-
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <Crown className="h-2.5 w-2.5 flex-shrink-0 text-[var(--gold-mid)]" />
@@ -263,18 +247,16 @@ function FriendRow({ friend, onClaim }: { friend: Friend; onClaim: () => void })
         </div>
         <p className="text-[9px] text-[var(--text-3)]">Joined {joinDate}</p>
       </div>
-
       {friend.rewarded ? (
-        <div className="flex items-center gap-1 rounded-lg border border-[rgba(61,186,106,0.3)]
-                        bg-[rgba(61,186,106,0.1)] px-2.5 py-1">
+        <div className="flex items-center gap-1 rounded-lg border border-[rgba(61,186,106,0.3)] bg-[rgba(61,186,106,0.1)] px-2.5 py-1">
           <Check className="h-3 w-3 text-[var(--ok)]" />
           <span className="font-display text-[9px] font-bold uppercase tracking-wider text-[var(--ok)]">Claimed</span>
         </div>
       ) : (
         <button
           onClick={onClaim}
-          className="flex items-center gap-1 rounded-lg border border-[var(--border-gold)]
-                     bg-[rgba(200,146,42,0.14)] px-2.5 py-1 transition-all hover:bg-[rgba(200,146,42,0.24)]"
+          disabled={claiming}
+          className="flex items-center gap-1 rounded-lg border border-[var(--border-gold)] bg-[rgba(200,146,42,0.14)] px-2.5 py-1 transition-all hover:bg-[rgba(200,146,42,0.24)] disabled:opacity-50"
         >
           <Gift className="h-3 w-3 text-[var(--gold-mid)]" />
           <span className="font-display text-[9px] font-bold uppercase tracking-wider text-[var(--gold-hi)]">

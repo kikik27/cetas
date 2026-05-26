@@ -1,10 +1,23 @@
-// Seed task definitions — run once after migration
-// npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed.ts
-// OR: npx prisma db seed
+// Seed script — ES module version for easy execution on Windows
+// Run: node prisma/seed.mjs
 
-import { PrismaClient } from '@prisma/client'
+import { createRequire } from 'module'
+const require = createRequire(import.meta.url)
 
-const prisma = new PrismaClient()
+// Load env
+const dotenv = require('dotenv')
+dotenv.config()
+dotenv.config({ path: '.env.local', override: false })
+
+const { PrismaClient } = require('@prisma/client')
+const { PrismaNeon }   = require('@prisma/adapter-neon')
+const { neonConfig }   = require('@neondatabase/serverless')
+const ws               = require('ws')
+
+neonConfig.webSocketConstructor = ws
+
+const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL })
+const prisma  = new PrismaClient({ adapter })
 
 const TASK_DEFS = [
   { id: 'play1',   label: 'First Battle', desc: 'Play 1 match today',      reward: 50,  total: 1, iconId: 'swords', sortOrder: 0 },
@@ -17,7 +30,6 @@ const TASK_DEFS = [
 
 async function main() {
   console.log('Seeding task definitions...')
-
   for (const def of TASK_DEFS) {
     await prisma.taskDefinition.upsert({
       where:  { id: def.id },
@@ -26,7 +38,6 @@ async function main() {
     })
     console.log(`  ✓ ${def.id}`)
   }
-
   console.log('Done.')
 }
 

@@ -3,6 +3,13 @@ import { UNIT_DEFS } from '../entities/unitDefs'
 import { makeUnit } from '../core/unitFactory'
 import type { BoardGrid, Unit, EnemyPreview } from '../core/types'
 import { COLS, ROWS, getAllUnits } from './boardSystem'
+import {
+  ARROW_SPEED_PX,
+  FLOAT_TEXT_TTL,
+  ENEMY_STAR2_PROB,
+  STAR2_MULTIPLIER,
+  WIN_GOLD_BONUS,
+} from '../constants'
 
 // ─── Enemy generation ─────────────────────────────────────────────────────────
 
@@ -15,7 +22,7 @@ export function generateEnemyPreview(round: number, maxBoardSlots: number): Enem
   for (let i = 0; i < count; i++) {
     const def = pool[i % pool.length]
     const stars: 1 | 2 = round >= 4 && i % 3 === 0 ? 2 : 1
-    const m = stars === 2 ? 1.8 : 1
+    const m = stars === 2 ? STAR2_MULTIPLIER : 1
     previews.push({
       id: def.id, name: def.name, stars,
       atk: Math.round(def.atk * m), hp: Math.round(def.hp * m), spd: def.spd,
@@ -36,7 +43,7 @@ export function generateEnemies(board: BoardGrid, round: number, maxBoardSlots: 
 
   for (let i = 0; i < count; i++) {
     const def = pool[Math.floor(Math.random() * pool.length)]
-    const stars: 1 | 2 = round >= 4 && Math.random() < 0.35 ? 2 : 1
+    const stars: 1 | 2 = round >= 4 && Math.random() < ENEMY_STAR2_PROB ? 2 : 1
     let placed = false
     for (let attempt = 0; attempt < 20 && !placed; attempt++) {
       const r = 1 + Math.floor(Math.random() * 3)   // rows 1–3 (row 0 = building)
@@ -231,12 +238,12 @@ export function runBattleStep(board: BoardGrid, deltaMs = 16, speedMult = 1): Ba
         tx: tp.c * CW + CW / 2,
         ty: tp.r * CH + CH / 2,
         progress: 0,
-        speed: 600, // px/s
+        speed: ARROW_SPEED_PX,
         team: u.enemy ? 'red' : 'blue',
       })
     }
 
-    t.u.floats.push({ txt: `-${dmg}`, rise: 0, life: 20, color: t.u.enemy ? '#F0997B' : '#E24B4A' })
+    t.u.floats.push({ txt: `-${dmg}`, rise: 0, life: FLOAT_TEXT_TTL, color: t.u.enemy ? '#F0997B' : '#E24B4A' })
 
     if (t.u.curHp <= 0) {
       t.u.dead = true; t.u.animState = 'death'; t.u.animFrame = 0; t.u.animElapsed = 0; t.u.animDone = false
@@ -270,7 +277,7 @@ export function evaluateBattleEnd(board: BoardGrid, round: number): BattleEndRes
   const win = enemiesAlive.length === 0
   return {
     win,
-    goldEarned:   win ? 3 + round : 0,
+    goldEarned:   win ? WIN_GOLD_BONUS + round : 0,
     hpLost:       win ? 0 : 10 + enemiesAlive.length * 6,
     slotsGained:  win ? 1 : 0,
     aliveCount:   alliesAlive.length,

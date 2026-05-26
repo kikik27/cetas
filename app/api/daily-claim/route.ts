@@ -1,8 +1,9 @@
-// GET  /api/daily-claim?wallet=0x...  — check today's claim status
-// POST /api/daily-claim               — open daily chest
+// GET  /api/daily-claim  — check today's claim status
+// POST /api/daily-claim  — open daily chest
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/src/lib/db'
+import { requireAuth } from '@/src/lib/api-auth'
 import type { DailyClaimStatusDTO } from '@/src/lib/api-types'
 
 function todayKey(): string {
@@ -10,42 +11,33 @@ function todayKey(): string {
 }
 
 const CHEST_REWARDS = [
-  { rewardType: 'gold', label: 'Gold Coins', amount: 150 },
-  { rewardType: 'xp',   label: 'Battle XP',  amount: 300 },
-  { rewardType: 'shard',label: 'Rare Shard', amount: 1   },
-  { rewardType: 'gold', label: 'Gold Coins', amount: 80  },
-  { rewardType: 'xp',   label: 'Battle XP',  amount: 500 },
-  { rewardType: 'shard',label: 'Epic Shard', amount: 1   },
+  { rewardType: 'xp', label: 'Battle XP',  amount: 150 },
+  { rewardType: 'xp', label: 'Battle XP',  amount: 300 },
+  { rewardType: 'xp', label: 'Battle XP',  amount: 80  },
+  { rewardType: 'xp', label: 'Battle XP',  amount: 500 },
+  { rewardType: 'xp', label: 'Battle XP',  amount: 200 },
+  { rewardType: 'xp', label: 'Battle XP',  amount: 250 },
 ]
 
 export async function GET(req: NextRequest) {
-  const wallet = req.nextUrl.searchParams.get('wallet')
-  if (!wallet) {
-    return NextResponse.json({ error: 'wallet param required' }, { status: 400 })
-  }
+  const { auth, error } = await requireAuth(req)
+  if (error) return error
 
   try {
-    const player = await prisma.player.findUnique({
-      where: { walletAddress: wallet.toLowerCase() },
-    })
-    if (!player) return NextResponse.json({ error: 'Player not found' }, { status: 404 })
-
     const date  = todayKey()
     const claim = await prisma.dailyClaim.findUnique({
-      where: { playerId_date: { playerId: player.id, date } },
+      where: { playerId_date: { playerId: auth.playerId, date } },
     })
 
     const dto: DailyClaimStatusDTO = {
       claimed: !!claim,
-      reward:  claim
-        ? {
-            date:       claim.date,
-            rewardType: claim.rewardType,
-            amount:     claim.amount,
-            label:      claim.label,
-            claimedAt:  claim.claimedAt.toISOString(),
-          }
-        : null,
+      reward:  claim ? {
+        date:       claim.date,
+        rewardType: claim.rewardType as 'xp',
+        amount:     claim.amount,
+        label:      claim.label,
+        claimedAt:  claim.claimedAt.toISOString(),
+      } : null,
     }
 
     return NextResponse.json({ data: dto })
@@ -56,45 +48,25 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const { auth, error } = await requireAuth(req)
+  if (error) return error
+
   try {
-    const body = await req.json() as { wallet: string }
-    const { wallet } = body
-
-    if (!wallet) {
-      return NextResponse.json({ error: 'wallet required' }, { status: 400 })
-    }
-
-    const player = await prisma.player.findUnique({
-      where: { walletAddress: wallet.toLowerCase() },
-    })
-    if (!player) return NextResponse.json({ error: 'Player not found' }, { status: 404 })
-
     const date = todayKey()
 
-    // Check already claimed
     const existing = await prisma.dailyClaim.findUnique({
-      where: { playerId_date: { playerId: player.id, date } },
+      where: { playerId_date: { playerId: auth.playerId, date } },
     })
-    if (existing) {
-      return NextResponse.json({ error: 'Already claimed today' }, { status: 400 })
-    }
+    if (existing) return NextResponse.json({ error: 'Already claimed today' }, { status: 400 })
 
-    // Pick random reward
     const reward = CHEST_REWARDS[Math.floor(Math.random() * CHEST_REWARDS.length)]
 
-    // Create claim + award points in transaction
     const [claim, updatedPlayer] = await prisma.$transaction([
       prisma.dailyClaim.create({
-        data: {
-          playerId:   player.id,
-          date,
-          rewardType: reward.rewardType,
-          amount:     reward.amount,
-          label:      reward.label,
-        },
+        data: { playerId: auth.playerId, date, ...reward },
       }),
       prisma.player.update({
-        where: { id: player.id },
+        where: { id: auth.playerId },
         data:  { totalPoints: { increment: reward.amount } },
       }),
     ])

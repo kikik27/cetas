@@ -1,8 +1,9 @@
 'use client'
 
-import Image from 'next/image'
 import { Heart, Swords } from 'lucide-react'
 import { cn } from '@/src/lib/utils'
+import AvatarImage from '@/src/components/ui/AvatarImage'
+import StatBadge from '@/src/components/ui/StatBadge'
 import type { BenchSlots, SelectedSource } from '../game/core/types'
 
 interface BenchProps {
@@ -94,18 +95,7 @@ function BenchSlot({
         <>
           {/* Avatar */}
           <div className="relative h-9 w-9 overflow-hidden rounded-lg border border-[rgba(74,158,255,0.3)] bg-[rgba(0,0,0,0.4)]">
-            <Image
-              src={`/assets/ui/avatars/avatar-${unit.avatarIndex}.png`}
-              alt={unit.name}
-              width={64} height={64}
-              unoptimized
-              className="pixel h-full w-full object-cover"
-            />
-            {unit.stars > 1 && (
-              <div className="absolute bottom-0 right-0 rounded-tl bg-black/80 px-0.5 text-[7px] font-bold leading-tight text-[#fbbf24]">
-                {'★'.repeat(unit.stars)}
-              </div>
-            )}
+            <AvatarImage idx={unit.avatarIndex} size={36} stars={unit.stars} />
           </div>
 
           {/* Name */}
@@ -115,12 +105,8 @@ function BenchSlot({
 
           {/* Stats */}
           <div className="flex gap-1 text-[7px]">
-            <span className="inline-flex items-center gap-0.5 text-[var(--stat-atk)]">
-              <Swords className="h-2 w-2" />{unit.atkVal}
-            </span>
-            <span className="inline-flex items-center gap-0.5 text-[var(--stat-hp)]">
-              <Heart className="h-2 w-2" />{unit.curHp}
-            </span>
+            <StatBadge icon={Swords} value={unit.atkVal} colorClass="text-[var(--stat-atk)]" size="xs" />
+            <StatBadge icon={Heart}  value={unit.curHp}  colorClass="text-[var(--stat-hp)]"  size="xs" />
           </div>
         </>
       ) : (

@@ -1,6 +1,7 @@
 // Pure factory — no side effects, no imports from rendering or state layers
 import { UNIT_DEFS, type UnitDef } from '../entities/unitDefs'
 import type { Unit } from './types'
+import { STAR2_MULTIPLIER, STAR3_MULTIPLIER } from '../constants'
 
 let UID = 0
 
@@ -9,7 +10,7 @@ export function resetUIDCounter() {
 }
 
 export function makeUnit(def: UnitDef, stars: 1 | 2 | 3 = 1, enemy = false): Unit {
-  const multiplier = stars === 3 ? 3.2 : stars === 2 ? 1.8 : 1
+  const multiplier = stars === 3 ? STAR3_MULTIPLIER : stars === 2 ? STAR2_MULTIPLIER : 1
   return {
     uid: ++UID,
     id: def.id,

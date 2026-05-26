@@ -2,6 +2,7 @@
 
 import { Button } from '@/src/components/ui/Button'
 import { Coins, Swords, Timer, Dices, Zap } from 'lucide-react'
+import { BATTLE_LIMIT_MS, REROLL_COST, SPEED_UP_FACTOR } from '@/src/game/constants'
 
 interface ControlsProps {
   phase: 'prep' | 'battle'
@@ -14,7 +15,7 @@ interface ControlsProps {
   onBattle: () => void
 }
 
-const BATTLE_SECONDS = 30
+const BATTLE_SECONDS = BATTLE_LIMIT_MS / 1000
 
 export default function Controls({
   phase, hasSelected, secondsLeft, speedUp, onReroll, onSell, onBattle,
@@ -34,7 +35,7 @@ export default function Controls({
           >
             <Dices className="h-4 w-4" />
             Reroll
-            <span className="ml-0.5 text-[10px] opacity-60">−2g</span>
+            <span className="ml-0.5 text-[10px] opacity-60">−{REROLL_COST}g</span>
           </Button>
 
           {/* Sell — only when unit selected */}
@@ -78,7 +79,7 @@ export default function Controls({
     : secondsLeft <= 10
     ? 'var(--warn)'
     : 'var(--ok)'
-  const timeLabel = speedUp ? '3×' : `${secondsLeft}s`
+  const timeLabel = speedUp ? `${SPEED_UP_FACTOR}×` : `${secondsLeft}s`
 
   return (
     <div className="relic-frame flex items-center gap-3 rounded-xl px-3 py-2.5">

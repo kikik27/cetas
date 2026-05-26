@@ -3,30 +3,26 @@
 import { useQuery } from '@tanstack/react-query'
 import type { LeaderboardEntryDTO } from '@/src/lib/api-types'
 
-// ─── Query keys ───────────────────────────────────────────────────────────────
 export const leaderboardKeys = {
-  list: (limit: number, wallet?: string) => ['leaderboard', limit, wallet ?? ''] as const,
+  list: (limit: number) => ['leaderboard', limit] as const,
 }
 
-// ─── Fetcher ──────────────────────────────────────────────────────────────────
 async function fetchLeaderboard(
   limit: number,
-  wallet?: string,
 ): Promise<{ leaderboard: LeaderboardEntryDTO[]; myRank: number | null }> {
-  const params = new URLSearchParams({ limit: String(limit) })
-  if (wallet) params.set('wallet', wallet)
-
-  const res = await fetch(`/api/leaderboard?${params}`)
+  const res = await fetch(
+    `/api/leaderboard?limit=${limit}`,
+    { credentials: 'include' }
+  )
   const json = await res.json()
   if (!res.ok || json.error) throw new Error(json.error ?? 'Failed to fetch leaderboard')
   return json.data
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
-export function useLeaderboard(wallet?: string, limit = 50) {
+export function useLeaderboard(limit = 50) {
   return useQuery({
-    queryKey: leaderboardKeys.list(limit, wallet),
-    queryFn:  () => fetchLeaderboard(limit, wallet),
-    staleTime: 60 * 1000,  // 1 minute — leaderboard doesn't need to be real-time
+    queryKey: leaderboardKeys.list(limit),
+    queryFn:  () => fetchLeaderboard(limit),
+    staleTime: 60 * 1000,
   })
 }

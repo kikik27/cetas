@@ -2,18 +2,81 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Crown, Flame } from 'lucide-react'
-import { useHomeStore } from '@/src/lib/homeStore'
+import { Crown, Flame, Pencil, X, Check, Loader2, CircleCheck, CircleX } from 'lucide-react'
+import { useWallet } from '@/src/providers/WalletProvider'
+import { useUpdatePlayer } from '@/src/hooks/usePlayer'
+import { useCheckName } from '@/src/hooks/useCheckName'
 import AvatarPicker from './AvatarPicker'
+import { cn } from '@/src/lib/utils'
 
 export default function PlayerCard() {
-  const { playerName, avatarIdx, totalPoints, streakDays, level, setAvatarIdx } = useHomeStore()
-  const [pickerOpen, setPickerOpen] = useState(false)
+  const { player, updatePlayer } = useWallet()
+  const updateMutation = useUpdatePlayer()
 
-  const xpForNext  = level * 500
-  const xpCurrent  = totalPoints % xpForNext
-  const xpPct      = Math.min(100, Math.round((xpCurrent / xpForNext) * 100))
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [renaming,   setRenaming]   = useState(false)
+  const [nameInput,  setNameInput]  = useState('')
+
+  const name            = player?.name            ?? 'Commander'
+  const avatarIdx       = player?.avatarIdx       ?? 1
+  const totalPoints     = player?.totalPoints     ?? 0
+  const streakDays      = player?.streakDays      ?? 0
+  const level           = player?.level           ?? 1
+  const nameChangesLeft = player?.nameChangesLeft ?? 0
+
+  // Only check availability when renaming and name differs from current
+  const skipCheck = !renaming || nameInput.trim() === name
+  const nameCheck = useCheckName(nameInput, 400, skipCheck)
+
+  const xpForNext = level * 500
+  const xpCurrent = totalPoints % xpForNext
+  const xpPct     = Math.min(100, Math.round((xpCurrent / xpForNext) * 100))
   const pad        = String(avatarIdx).padStart(2, '0')
+
+  const nameInputTrimmed = nameInput.trim()
+  const canSubmitRename =
+    nameInputTrimmed.length >= 2 &&
+    nameInputTrimmed !== name &&
+    nameCheck.status === 'available'
+
+  async function handleSelectAvatar(idx: number) {
+    setPickerOpen(false)
+    try {
+      const updated = await updateMutation.mutateAsync({ avatarIdx: idx })
+      updatePlayer({ avatarIdx: updated.avatarIdx })
+    } catch { /* silent */ }
+  }
+
+  function startRename() {
+    setNameInput(name)
+    setRenaming(true)
+  }
+
+  function cancelRename() {
+    setRenaming(false)
+    setNameInput('')
+  }
+
+  async function submitRename() {
+    const trimmed = nameInputTrimmed
+    if (!trimmed || trimmed === name) { cancelRename(); return }
+    if (!canSubmitRename) return
+
+    try {
+      const updated = await updateMutation.mutateAsync({ name: trimmed })
+      updatePlayer({ name: updated.name, nameChangesLeft: updated.nameChangesLeft })
+      setRenaming(false)
+    } catch (err) {
+      // error shown via mutation state
+      console.error(err)
+    }
+  }
+
+  const renameError = updateMutation.error instanceof Error
+    ? updateMutation.error.message
+    : nameCheck.status === 'taken' || nameCheck.status === 'invalid'
+    ? nameCheck.message
+    : null
 
   return (
     <>
@@ -21,17 +84,16 @@ export default function PlayerCard() {
         open={pickerOpen}
         current={avatarIdx}
         onClose={() => setPickerOpen(false)}
-        onSelect={setAvatarIdx}
+        onSelect={handleSelectAvatar}
       />
 
       <section className="relic-frame flex items-center gap-3 px-4 py-4">
-        {/* Avatar button */}
+        {/* Avatar */}
         <button
           onClick={() => setPickerOpen(true)}
           aria-label="Change avatar"
           className="group relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl
-                     border-2 border-[var(--border-gold)] transition-colors
-                     hover:border-[var(--gold-hi)]"
+                     border-2 border-[var(--border-gold)] transition-colors hover:border-[var(--gold-hi)]"
         >
           <Image
             src={`/assets/ui/avatars/avatar-${pad}.png`}
@@ -58,9 +120,100 @@ export default function PlayerCard() {
               Level {level}
             </span>
           </div>
-          <p className="truncate font-display text-[16px] font-bold leading-tight text-[var(--text-1)]">
-            {playerName}
-          </p>
+
+          {/* Name row */}
+          {renaming ? (
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-1.5">
+                {/* Input */}
+                <div className="relative min-w-0 flex-1">
+                  <input
+                    type="text"
+                    value={nameInput}
+                    onChange={e => setNameInput(e.target.value.slice(0, 20))}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && canSubmitRename) submitRename()
+                      if (e.key === 'Escape') cancelRename()
+                    }}
+                    autoFocus
+                    maxLength={20}
+                    className={cn(
+                      'w-full rounded-lg border bg-[rgba(200,146,42,0.08)] px-2 py-1 pr-7',
+                      'font-display text-[13px] text-[var(--text-1)] outline-none transition-all',
+                      nameCheck.status === 'taken' || nameCheck.status === 'invalid'
+                        ? 'border-[var(--enemy)]'
+                        : nameCheck.status === 'available'
+                        ? 'border-[var(--ok)]'
+                        : 'border-[var(--border-gold)] focus:border-[var(--gold-hi)]'
+                    )}
+                  />
+                  {/* Inline status icon */}
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                    {nameCheck.status === 'checking' && (
+                      <Loader2 className="h-3 w-3 animate-spin text-[var(--text-dim)]" />
+                    )}
+                    {nameCheck.status === 'available' && (
+                      <CircleCheck className="h-3 w-3 text-[var(--ok)]" />
+                    )}
+                    {(nameCheck.status === 'taken' || nameCheck.status === 'invalid') && (
+                      <CircleX className="h-3 w-3 text-[var(--enemy)]" />
+                    )}
+                  </div>
+                </div>
+
+                {/* Confirm */}
+                <button
+                  onClick={submitRename}
+                  disabled={!canSubmitRename || updateMutation.isPending}
+                  className="flex h-6 w-6 flex-shrink-0 items-center justify-center
+                             rounded-lg border border-[rgba(61,186,106,0.5)]
+                             bg-[rgba(61,186,106,0.12)] text-[var(--ok)]
+                             disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {updateMutation.isPending
+                    ? <Loader2 className="h-3 w-3 animate-spin" />
+                    : <Check className="h-3 w-3" />
+                  }
+                </button>
+
+                {/* Cancel */}
+                <button
+                  onClick={cancelRename}
+                  className="flex h-6 w-6 flex-shrink-0 items-center justify-center
+                             rounded-lg border border-[var(--border)] text-[var(--text-3)]
+                             hover:border-[var(--enemy)] hover:text-[var(--enemy)]"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+
+              {/* Error / status message */}
+              {renameError && (
+                <p className="text-[9px] text-[var(--enemy)]">{renameError}</p>
+              )}
+              {nameCheck.status === 'available' && (
+                <p className="text-[9px] text-[var(--ok)]">Name is available</p>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <p className="truncate font-display text-[16px] font-bold leading-tight text-[var(--text-1)]">
+                {name}
+              </p>
+              {nameChangesLeft > 0 && (
+                <button
+                  onClick={startRename}
+                  title={`Rename (${nameChangesLeft} change left)`}
+                  className="flex-shrink-0 rounded-md p-0.5 text-[var(--text-dim)]
+                             transition-colors hover:text-[var(--gold-mid)]"
+                >
+                  <Pencil className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* XP bar */}
           <div className="mt-2 flex items-center gap-2">
             <div className="stat-bar flex-1">
               <div

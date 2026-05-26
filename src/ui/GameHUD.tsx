@@ -13,8 +13,7 @@ import Controls from './Controls'
 import BattleLog from './BattleLog'
 import RoundModal from './RoundModal'
 import { audioManager } from '@/src/lib/audioManager'
-
-const BATTLE_LIMIT_MS = 30_000
+import { BATTLE_LIMIT_MS, BATTLE_TICK_CAP, MAX_ROUNDS, PHASE } from '@/src/game/constants'
 
 export default function GameHUD() {
   const round         = useGameStore(s => s.round)
@@ -55,7 +54,7 @@ export default function GameHUD() {
       return
     }
     function loop(ts: number) {
-      const delta = lastTsRef.current ? Math.min(ts - lastTsRef.current, 100) : 16
+      const delta = lastTsRef.current ? Math.min(ts - lastTsRef.current, BATTLE_TICK_CAP) : 16
       lastTsRef.current = ts
       tickRef.current(delta)
       rafRef.current = requestAnimationFrame(loop)
@@ -74,6 +73,7 @@ export default function GameHUD() {
   useEffect(() => {
     if (phase !== 'battle' || battleRunning) return
     const result = evaluateBattleEnd(board, round)
+    const showResultModal = async () => {
     if (hp <= 0) {
       setModal({
         show: true,
@@ -88,7 +88,7 @@ export default function GameHUD() {
         title: 'Victory!',
         titleColor: 'var(--ok)',
         description: `${result.aliveCount} units survived! +${result.goldEarned} gold. Slot unlocked!`,
-        buttonLabel: round >= 5 ? 'Play Again' : `Round ${round + 1} →`,
+        buttonLabel: round >= MAX_ROUNDS ? 'Play Again' : `Round ${round + 1} →`,
       })
     } else {
       setModal({
@@ -96,14 +96,15 @@ export default function GameHUD() {
         title: 'Defeat!',
         titleColor: 'var(--warn)',
         description: `−${result.hpLost} HP. Remaining HP: ${Math.max(0, hp - result.hpLost)}. Slot unlocked!`,
-        buttonLabel: round >= 5 ? 'Play Again' : `Round ${round + 1} →`,
+        buttonLabel: round >= MAX_ROUNDS ? 'Play Again' : `Round ${round + 1} →`,
       })
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [battleRunning, phase])
+    }
+    void showResultModal()
+  }, [battleRunning, board, hp, phase, round])
 
   const boardCount = getBoardUnitCount(board)
-  const isPrep     = phase === 'prep'
+  const isPrep = phase === PHASE.PREP
 
   // ── Music: main on prep, battle on battle ─────────────────────────────────
   useEffect(() => {

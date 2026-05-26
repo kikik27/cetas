@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { cn } from '@/src/lib/utils'
 import { Swords, Shield } from 'lucide-react'
+import { UI } from '@/src/lib/assetPaths'
 import type { GamePhase } from '../game/core/types'
 
 interface TopBarProps {
@@ -41,7 +42,7 @@ export default function TopBar({ round, hp, gold, boardUnitCount, maxBoardSlots,
 
       {/* ── Gold ── */}
       <div className="flex items-center gap-1.5 rounded-lg border border-[rgba(200,146,42,0.3)] bg-[rgba(200,146,42,0.08)] px-2.5 py-1.5">
-        <Image src="/assets/ui/icons/icon-03.png" alt="" width={14} height={14} unoptimized className="pixel" aria-hidden />
+        <Image src={UI.goldIcon} alt="" width={14} height={14} unoptimized className="pixel" aria-hidden />
         <span className="font-display text-[14px] font-bold text-[var(--gold-hi)]">{gold}</span>
       </div>
 

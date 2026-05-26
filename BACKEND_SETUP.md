@@ -84,17 +84,46 @@ npm run db:studio
 ## TanStack Query Hooks
 
 ```ts
-import { usePlayer }          from '@/src/hooks/usePlayer'
-import { useTasks }           from '@/src/hooks/useTasks'
+import { usePlayer }           from '@/src/hooks/usePlayer'
+import { useTasks }            from '@/src/hooks/useTasks'
 import { useDailyClaimStatus } from '@/src/hooks/useDailyClaim'
-import { useFriends }         from '@/src/hooks/useFriends'
-import { useLeaderboard }     from '@/src/hooks/useLeaderboard'
-import { useWallet }          from '@/src/providers/WalletProvider'
+import { useFriends }          from '@/src/hooks/useFriends'
+import { useLeaderboard }      from '@/src/hooks/useLeaderboard'
+import { useWallet }           from '@/src/providers/WalletProvider'
 
 // Contoh penggunaan:
-const { wallet } = useWallet()
+const { wallet, connected, isMiniPay } = useWallet()
 const { data: player, isLoading } = usePlayer(wallet)
 const { data: tasks } = useTasks(wallet)
+```
+
+---
+
+## Wallet Integration (MiniPay)
+
+Stack: **wagmi v3 + viem** — sesuai docs.minipay.xyz
+
+| File | Fungsi |
+|------|--------|
+| `src/lib/wagmi.ts` | Config wagmi (injected connector, Celo chains) |
+| `src/providers/WagmiProvider.tsx` | Wagmi context wrapper |
+| `src/providers/WalletProvider.tsx` | Exposes `useWallet()` hook |
+| `src/hooks/useAutoConnect.ts` | Auto-connect on mount (MiniPay requirement) |
+| `src/ui/MiniPayGate.tsx` | Guard component — shows error jika bukan di MiniPay |
+
+**Rules MiniPay:**
+- ✅ Auto-connect on page load — JANGAN tampilkan tombol "Connect Wallet"
+- ✅ `window.ethereum` diinjeksi otomatis oleh MiniPay
+- ✅ Cek `window.ethereum?.isMiniPay` untuk deteksi environment
+- ✅ Jangan minta user sign message untuk autentikasi
+- ✅ Dev mode: fallback ke mock wallet via localStorage
+
+**Penggunaan MiniPayGate:**
+```tsx
+// Wrap halaman yang butuh wallet
+<MiniPayGate>
+  <HomeClient />
+</MiniPayGate>
 ```
 
 ---

@@ -3,6 +3,9 @@
 import Image from 'next/image'
 import { Heart, Swords } from 'lucide-react'
 import { cn } from '@/src/lib/utils'
+import { UI } from '@/src/lib/assetPaths'
+import AvatarImage from '@/src/components/ui/AvatarImage'
+import StatBadge from '@/src/components/ui/StatBadge'
 import type { ShopItem } from '../game/core/types'
 
 const TRAIT_COLORS: Record<string, { text: string; bg: string; border: string }> = {
@@ -60,17 +63,9 @@ function ShopCard({ item, onBuy }: { item: ShopItem; onBuy: () => void }) {
       {/* Avatar */}
       <div className={cn(
         'h-12 w-12 overflow-hidden rounded-xl border bg-[rgba(0,0,0,0.4)]',
-        item.sold
-          ? 'border-[rgba(255,255,255,0.06)]'
-          : 'border-[rgba(200,146,42,0.35)]'
+        item.sold ? 'border-[rgba(255,255,255,0.06)]' : 'border-[rgba(200,146,42,0.35)]'
       )}>
-        <Image
-          src={`/assets/ui/avatars/avatar-${item.avatarIndex}.png`}
-          alt={item.name}
-          width={64} height={64}
-          unoptimized
-          className="pixel h-full w-full object-cover"
-        />
+        <AvatarImage idx={item.avatarIndex} size={48} />
       </div>
 
       {/* Name */}
@@ -88,17 +83,13 @@ function ShopCard({ item, onBuy }: { item: ShopItem; onBuy: () => void }) {
 
       {/* Stats */}
       <div className="flex gap-1.5 text-[8px]">
-        <span className="inline-flex items-center gap-0.5 text-[var(--stat-atk)]">
-          <Swords className="h-2.5 w-2.5" />{item.atk}
-        </span>
-        <span className="inline-flex items-center gap-0.5 text-[var(--stat-hp)]">
-          <Heart className="h-2.5 w-2.5" />{item.hp}
-        </span>
+        <StatBadge icon={Swords} value={item.atk} colorClass="text-[var(--stat-atk)]" />
+        <StatBadge icon={Heart}  value={item.hp}  colorClass="text-[var(--stat-hp)]" />
       </div>
 
       {/* Cost badge */}
       <div className="flex items-center gap-0.5 rounded-full border border-[rgba(200,146,42,0.35)] bg-[rgba(200,146,42,0.12)] px-2 py-[3px]">
-        <Image src="/assets/ui/icons/icon-03.png" alt="" width={10} height={10} unoptimized className="pixel" aria-hidden />
+        <Image src={UI.goldIcon} alt="" width={10} height={10} unoptimized className="pixel" aria-hidden />
         <span className="font-display text-[11px] font-bold text-[var(--gold-hi)]">{item.cost}</span>
       </div>
     </button>

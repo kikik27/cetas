@@ -1,10 +1,16 @@
 'use client'
 
 import { create } from 'zustand'
-import type { GameState, SelectedSource, ShopItem } from '../core/types'
+import type { GameState, SelectedSource } from '../core/types'
 import { emptyBoard, getBoardUnitCount, placeOnBoard, placeOnBench } from '../systems/boardSystem'
 import { generateShop, checkMerge, buyUnit as buyUnitFn } from '../systems/shopSystem'
 import { generateEnemies, runBattleStep, evaluateBattleEnd, generateEnemyPreview } from '../systems/combatSystem'
+import {
+  BATTLE_LIMIT_MS,
+  SPEED_UP_FACTOR,
+  MAX_ROUNDS,
+  REROLL_COST,
+} from '../constants'
 
 const MAX_LOG = 5
 
@@ -130,12 +136,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   reroll() {
     const { gold } = get()
-    if (gold < 2) {
-      set(s => ({ log: addLog(s.log, 'Need 2 gold to reroll!') }))
+    if (gold < REROLL_COST) {
+      set(s => ({ log: addLog(s.log, `Need ${REROLL_COST} gold to reroll!`) }))
       return
     }
     set(s => ({
-      gold: s.gold - 2,
+      gold: s.gold - REROLL_COST,
       shop: generateShop(),
       log: addLog(s.log, 'Shop refreshed!'),
     }))
@@ -196,18 +202,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { board, battleRunning, battleTimeMs, speedUp, projectiles } = get()
     if (!battleRunning) return
 
-    const BATTLE_LIMIT_MS = 30_000
+    const BATTLE_LIMIT_MS_LOCAL = BATTLE_LIMIT_MS
     const newTimeMs = battleTimeMs + deltaMs
     const wasSpeedUp = speedUp
-    const nowSpeedUp = newTimeMs >= BATTLE_LIMIT_MS
+    const nowSpeedUp = newTimeMs >= BATTLE_LIMIT_MS_LOCAL
 
     if (!wasSpeedUp && nowSpeedUp) {
-      set(s => ({ speedUp: true, battleTimeMs: newTimeMs, log: addLog(s.log, 'Time\'s up! Speed 3x!') }))
+      set(s => ({ speedUp: true, battleTimeMs: newTimeMs, log: addLog(s.log, `Time's up! Speed ${SPEED_UP_FACTOR}x!`) }))
     } else {
       set({ battleTimeMs: newTimeMs, speedUp: nowSpeedUp })
     }
 
-    const speedMult = nowSpeedUp ? 3 : 1
+    const speedMult = nowSpeedUp ? SPEED_UP_FACTOR : 1
     const { board: newBoard, ongoing, newProjectiles } = runBattleStep(board, deltaMs, speedMult)
 
     // Advance existing projectiles + add new ones
@@ -257,7 +263,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   nextRound() {
     const { round, hp, gold, board, maxBoardSlots } = get()
-    if (hp <= 0 || round >= 5) {
+    if (hp <= 0 || round >= MAX_ROUNDS) {
       get().resetGame()
       return
     }

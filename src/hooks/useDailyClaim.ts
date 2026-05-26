@@ -2,25 +2,25 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { DailyClaimStatusDTO } from '@/src/lib/api-types'
+import { playerKeys } from './usePlayer'
 
-// ─── Query keys ───────────────────────────────────────────────────────────────
 export const dailyClaimKeys = {
-  status: (wallet: string) => ['daily-claim', wallet] as const,
+  status: () => ['daily-claim'] as const,
 }
 
-// ─── Fetchers ─────────────────────────────────────────────────────────────────
-async function fetchDailyClaimStatus(wallet: string): Promise<DailyClaimStatusDTO> {
-  const res = await fetch(`/api/daily-claim?wallet=${encodeURIComponent(wallet)}`)
+async function fetchDailyClaimStatus(): Promise<DailyClaimStatusDTO> {
+  const res = await fetch('/api/daily-claim', { credentials: 'include' })
   const json = await res.json()
   if (!res.ok || json.error) throw new Error(json.error ?? 'Failed to fetch daily claim')
   return json.data
 }
 
-async function openDailyChest(wallet: string) {
+async function openDailyChest() {
   const res = await fetch('/api/daily-claim', {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ wallet }),
+    method:      'POST',
+    headers:     { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body:        '{}',
   })
   const json = await res.json()
   if (!res.ok || json.error) throw new Error(json.error ?? 'Failed to open chest')
@@ -30,34 +30,31 @@ async function openDailyChest(wallet: string) {
   }
 }
 
-// ─── Hooks ────────────────────────────────────────────────────────────────────
-export function useDailyClaimStatus(wallet: string | null | undefined) {
+export function useDailyClaimStatus(enabled = true) {
   return useQuery({
-    queryKey: dailyClaimKeys.status(wallet ?? ''),
-    queryFn:  () => fetchDailyClaimStatus(wallet!),
-    enabled:  !!wallet,
+    queryKey:  dailyClaimKeys.status(),
+    queryFn:   fetchDailyClaimStatus,
+    enabled,
     staleTime: 60 * 1000,
   })
 }
 
-export function useOpenChest(wallet: string) {
+export function useOpenChest() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: () => openDailyChest(wallet),
+    mutationFn: openDailyChest,
     onSuccess: (data) => {
-      // Mark as claimed in cache
-      qc.setQueryData<DailyClaimStatusDTO>(dailyClaimKeys.status(wallet), {
+      qc.setQueryData<DailyClaimStatusDTO>(dailyClaimKeys.status(), {
         claimed: true,
         reward: {
           date:       data.date,
-          rewardType: data.rewardType,
+          rewardType: data.rewardType as 'xp',
           amount:     data.amount,
           label:      data.label,
           claimedAt:  data.claimedAt,
         },
       })
-      // Refresh player points
-      qc.invalidateQueries({ queryKey: ['player', wallet] })
+      qc.invalidateQueries({ queryKey: playerKeys.me })
     },
   })
 }

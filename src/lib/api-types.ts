@@ -14,15 +14,23 @@ export type ApiResult<T> = ApiResponse<T> | ApiError
 
 // ─── Player ───────────────────────────────────────────────────────────────────
 export interface PlayerDTO {
-  id:           string
+  id:              string
+  walletAddress:   string
+  name:            string
+  avatarIdx:       number
+  totalPoints:     number
+  level:           number
+  streakDays:      number
+  referralCode:    string
+  lastLoginAt:     string
+  nameChangesLeft: number
+}
+
+export interface LoginResponseDTO {
+  /** true = first time this wallet has logged in → show onboarding */
+  isNewPlayer: boolean
   walletAddress: string
-  name:         string
-  avatarIdx:    number
-  totalPoints:  number
-  level:        number
-  streakDays:   number
-  referralCode: string
-  lastLoginAt:  string
+  player: PlayerDTO | null
 }
 
 // ─── Tasks ────────────────────────────────────────────────────────────────────
@@ -53,7 +61,7 @@ export interface TaskWithProgressDTO extends TaskDefDTO {
 // ─── Daily Claim ──────────────────────────────────────────────────────────────
 export interface DailyClaimDTO {
   date:       string
-  rewardType: string
+  rewardType: 'xp'
   amount:     number
   label:      string
   claimedAt:  string

@@ -1,8 +1,9 @@
 'use client'
 
-import Image from 'next/image'
 import { AlertTriangle, Heart, Swords, Zap, Shield } from 'lucide-react'
 import { cn } from '@/src/lib/utils'
+import AvatarImage from '@/src/components/ui/AvatarImage'
+import StatBadge from '@/src/components/ui/StatBadge'
 import type { EnemyPreview } from '../game/core/types'
 
 interface EnemyIntelProps {
@@ -70,18 +71,7 @@ function EnemyCard({ enemy }: { enemy: EnemyPreview }) {
     )}>
       {/* Avatar */}
       <div className="relative h-11 w-11 overflow-hidden rounded-lg border border-[rgba(224,48,48,0.35)] bg-[rgba(0,0,0,0.4)]">
-        <Image
-          src={`/assets/ui/avatars/avatar-${enemy.avatarIndex}.png`}
-          alt={enemy.name}
-          width={64} height={64}
-          unoptimized
-          className="pixel h-full w-full object-cover"
-        />
-        {enemy.stars > 1 && (
-          <div className="absolute bottom-0 right-0 rounded-tl bg-black/80 px-0.5 text-[7px] font-bold leading-tight text-[#fbbf24]">
-            {'★'.repeat(enemy.stars)}
-          </div>
-        )}
+        <AvatarImage idx={enemy.avatarIndex} size={44} stars={enemy.stars} />
       </div>
 
       {/* Name */}
@@ -97,12 +87,8 @@ function EnemyCard({ enemy }: { enemy: EnemyPreview }) {
 
       {/* Stats */}
       <div className="flex gap-1.5 text-[8px]">
-        <span className="inline-flex items-center gap-0.5 text-[var(--stat-atk)]">
-          <Swords className="h-2.5 w-2.5" />{enemy.atk}
-        </span>
-        <span className="inline-flex items-center gap-0.5 text-[var(--stat-hp)]">
-          <Heart className="h-2.5 w-2.5" />{enemy.hp}
-        </span>
+        <StatBadge icon={Swords} value={enemy.atk} colorClass="text-[var(--stat-atk)]" />
+        <StatBadge icon={Heart}  value={enemy.hp}  colorClass="text-[var(--stat-hp)]" />
       </div>
 
       {/* Speed */}

@@ -2,29 +2,29 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/src/lib/db'
+import { requireAuth } from '@/src/lib/api-auth'
+import { claimFriendBodySchema, getZodMessage } from '@/src/lib/validation'
 
 const REFERRAL_REWARD = 100
 
 export async function POST(req: NextRequest) {
+  const { auth, error } = await requireAuth(req)
+  if (error) return error
+
   try {
-    const body = await req.json() as { wallet: string; friendId: string }
-    const { wallet, friendId } = body
-
-    if (!wallet || !friendId) {
-      return NextResponse.json({ error: 'wallet and friendId required' }, { status: 400 })
+    const body = await req.json().catch(() => ({}))
+    const parsed = claimFriendBodySchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: getZodMessage(parsed.error) }, { status: 400 })
     }
-
-    const player = await prisma.player.findUnique({
-      where: { walletAddress: wallet.toLowerCase() },
-    })
-    if (!player) return NextResponse.json({ error: 'Player not found' }, { status: 404 })
+    const { friendId } = parsed.data
 
     const referral = await prisma.referral.findFirst({
-      where: { referrerId: player.id, referredId: friendId },
+      where: { referrerId: auth.playerId, referredId: friendId },
     })
 
-    if (!referral)          return NextResponse.json({ error: 'Referral not found' }, { status: 404 })
-    if (referral.rewarded)  return NextResponse.json({ error: 'Already claimed' }, { status: 400 })
+    if (!referral)         return NextResponse.json({ error: 'Referral not found' }, { status: 404 })
+    if (referral.rewarded) return NextResponse.json({ error: 'Already claimed' }, { status: 400 })
 
     const [, updatedPlayer] = await prisma.$transaction([
       prisma.referral.update({
@@ -32,17 +32,13 @@ export async function POST(req: NextRequest) {
         data:  { rewarded: true, rewardedAt: new Date() },
       }),
       prisma.player.update({
-        where: { id: player.id },
+        where: { id: auth.playerId },
         data:  { totalPoints: { increment: REFERRAL_REWARD } },
       }),
     ])
 
     return NextResponse.json({
-      data: {
-        friendId,
-        reward:      REFERRAL_REWARD,
-        totalPoints: updatedPlayer.totalPoints,
-      },
+      data: { friendId, reward: REFERRAL_REWARD, totalPoints: updatedPlayer.totalPoints },
     })
   } catch (err) {
     console.error('[POST /api/friends/claim]', err)
