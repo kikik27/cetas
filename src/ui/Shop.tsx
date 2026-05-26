@@ -49,7 +49,7 @@ function ShopCard({ item, onBuy }: { item: ShopItem; onBuy: () => void }) {
       onClick={item.sold ? undefined : onBuy}
       disabled={item.sold}
       className={cn(
-        'flex w-[66px] flex-shrink-0 flex-col items-center gap-1 rounded-xl px-1.5 py-1.5 transition-all duration-150',
+        'relative flex w-[66px] flex-shrink-0 flex-col items-center gap-1 overflow-hidden rounded-xl px-1.5 pb-1.5 pt-2 transition-all duration-150',
         item.sold
           ? 'cursor-default border border-[rgba(255,255,255,0.05)] bg-[rgba(4,16,33,0.5)] opacity-30'
           : [
@@ -60,6 +60,12 @@ function ShopCard({ item, onBuy }: { item: ShopItem; onBuy: () => void }) {
       )}
       aria-label={`Recruit ${item.name} for ${item.cost} gold${item.sold ? ' (recruited)' : ''}`}
     >
+      {/* Cost badge */}
+      <div className="absolute right-1 top-1 z-10 flex items-center gap-0.5 rounded-full border border-[rgba(200,146,42,0.45)] bg-[rgba(4,16,33,0.88)] px-1 py-[1px] shadow-[0_2px_8px_rgba(0,0,0,0.45)]">
+        <Image src={UI.goldIcon} alt="" width={8} height={8} unoptimized className="pixel" aria-hidden />
+        <span className="font-display text-[9px] font-bold text-[var(--gold-hi)]">{item.cost}</span>
+      </div>
+
       {/* Avatar */}
       <div className={cn(
         'h-9 w-9 overflow-hidden rounded-lg border bg-[rgba(0,0,0,0.4)]',
@@ -87,11 +93,6 @@ function ShopCard({ item, onBuy }: { item: ShopItem; onBuy: () => void }) {
         <StatBadge icon={Heart}  value={item.hp}  colorClass="text-[var(--stat-hp)]" />
       </div>
 
-      {/* Cost badge */}
-      <div className="flex items-center gap-0.5 rounded-full border border-[rgba(200,146,42,0.35)] bg-[rgba(200,146,42,0.12)] px-1.5 py-[2px]">
-        <Image src={UI.goldIcon} alt="" width={10} height={10} unoptimized className="pixel" aria-hidden />
-        <span className="font-display text-[10px] font-bold text-[var(--gold-hi)]">{item.cost}</span>
-      </div>
     </button>
   )
 }

@@ -157,8 +157,10 @@ body {
 }
 
 .game-board-frame {
-  flex: 1 1 0;
-  min-height: 190px;
+  flex: 0 1 auto;
+  height: clamp(260px, 54dvh, 492px);
+  min-height: 0;
+  max-height: calc(100dvh - 244px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -194,7 +196,8 @@ body {
   }
 
   .game-board-frame {
-    min-height: 170px;
+    height: clamp(230px, 52dvh, 420px);
+    max-height: calc(100dvh - 220px);
   }
 
   .game-tray-panel {
@@ -204,7 +207,8 @@ body {
 
 @media (max-height: 620px) {
   .game-board-frame {
-    min-height: 150px;
+    height: clamp(210px, 50dvh, 340px);
+    max-height: calc(100dvh - 206px);
   }
 
   .game-tray-panel {

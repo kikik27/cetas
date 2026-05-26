@@ -12,7 +12,7 @@ export default function BattleLog({ log }: { log: string[] }) {
   return (
     <div
       ref={ref}
-      className="surface min-h-[32px] max-h-[42px] overflow-y-auto rounded-xl px-2.5 py-1.5 text-[10px] leading-snug text-[var(--text-2)]"
+      className="surface h-full min-h-0 overflow-y-auto rounded-xl px-2.5 py-1.5 text-[10px] leading-snug text-[var(--text-2)]"
       role="log"
       aria-live="polite"
       aria-label="Battle log"

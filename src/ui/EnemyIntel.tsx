@@ -86,8 +86,8 @@ function EnemyCard({ enemy }: { enemy: EnemyPreview }) {
 
       {/* Stats */}
       <div className="flex gap-1 text-[7px]">
-        <StatBadge icon={Swords} value={enemy.atk} colorClass="text-[var(--stat-atk)]" />
-        <StatBadge icon={Heart}  value={enemy.hp}  colorClass="text-[var(--stat-hp)]" />
+        <StatBadge icon={Swords} value="???" colorClass="text-[var(--stat-atk)]" />
+        <StatBadge icon={Heart}  value="???" colorClass="text-[var(--stat-hp)]" />
       </div>
 
       {/* Speed */}
