@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Users, Copy, Check, Gift, UserPlus, Crown, Ticket, ArrowDownLeft, ArrowUpRight } from 'lucide-react'
+import { Users, Copy, Check, Gift, UserPlus, Crown, Ticket, ArrowDownLeft, ArrowUpRight, Loader2 } from 'lucide-react'
 import { useFriends, useClaimReferralReward, useSubmitReferralCode } from '@/src/hooks/useFriends'
 import { useWallet } from '@/src/providers/WalletProvider'
 import { Button } from '@/src/components/ui/Button'
+import { LoadingState } from '@/src/components/ui/LoadingState'
 import { cn } from '@/src/lib/utils'
 import BottomNav from './home/BottomNav'
 import type { FriendDTO } from '@/src/lib/api-types'
@@ -17,7 +18,7 @@ export default function FriendsClient() {
   const { player, authStatus } = useWallet()
   const isReady = authStatus === 'authenticated'
 
-  const { data: friends = [] }  = useFriends(isReady)
+  const { data: friends = [], isLoading, isFetching }  = useFriends(isReady)
   const claimMutation           = useClaimReferralReward()
   const referralMutation        = useSubmitReferralCode()
 
@@ -32,6 +33,7 @@ export default function FriendsClient() {
   const outboundCount = friends.filter(f => f.relation === 'outbound').length
   const inboundCount = friends.filter(f => f.relation === 'inbound').length
   const visibleFriends = friends.filter(friend => filter === 'all' ? true : friend.relation === filter)
+  const isInitialLoading = !isReady || isLoading
 
   // Check if this player already used a referral code
   // (server returns 400 "Already used" if they try again)
@@ -67,7 +69,7 @@ export default function FriendsClient() {
           Friends & Referral
         </h1>
         <span className="ml-auto font-display text-[11px] text-[var(--text-3)]">
-          {friends.length} total
+          {isInitialLoading ? 'loading' : isFetching ? 'syncing' : `${friends.length} total`}
         </span>
       </div>
 
@@ -87,11 +89,11 @@ export default function FriendsClient() {
           <div className="divider-gold" />
           <div className="grid grid-cols-2 gap-2">
             <div className="flex flex-col items-center rounded-xl border border-[var(--border)] bg-[rgba(4,16,33,0.6)] py-2.5">
-              <span className="font-display text-[20px] font-bold text-[var(--gold-hi)]">{pendingCount}</span>
+              <span className="font-display text-[20px] font-bold text-[var(--gold-hi)]">{isInitialLoading ? '-' : pendingCount}</span>
               <span className="text-[9px] uppercase tracking-wider text-[var(--text-3)]">Pending reward</span>
             </div>
             <div className="flex flex-col items-center rounded-xl border border-[var(--border)] bg-[rgba(4,16,33,0.6)] py-2.5">
-              <span className="font-display text-[20px] font-bold text-[var(--ok)]">{claimedCount}</span>
+              <span className="font-display text-[20px] font-bold text-[var(--ok)]">{isInitialLoading ? '-' : claimedCount}</span>
               <span className="text-[9px] uppercase tracking-wider text-[var(--text-3)]">Claimed</span>
             </div>
           </div>
@@ -99,14 +101,14 @@ export default function FriendsClient() {
             <div className="flex items-center gap-2 rounded-xl border border-[rgba(200,146,42,0.22)] bg-[rgba(200,146,42,0.06)] px-3 py-2">
               <ArrowUpRight className="h-3.5 w-3.5 text-[var(--gold-mid)]" />
               <div>
-                <p className="font-display text-[11px] font-bold text-[var(--text-1)]">{outboundCount}</p>
+                <p className="font-display text-[11px] font-bold text-[var(--text-1)]">{isInitialLoading ? '-' : outboundCount}</p>
                 <p className="text-[9px] uppercase tracking-wider text-[var(--text-3)]">Invited by me</p>
               </div>
             </div>
             <div className="flex items-center gap-2 rounded-xl border border-[rgba(160,216,255,0.22)] bg-[rgba(160,216,255,0.06)] px-3 py-2">
               <ArrowDownLeft className="h-3.5 w-3.5 text-[var(--ally)]" />
               <div>
-                <p className="font-display text-[11px] font-bold text-[var(--text-1)]">{inboundCount}</p>
+                <p className="font-display text-[11px] font-bold text-[var(--text-1)]">{isInitialLoading ? '-' : inboundCount}</p>
                 <p className="text-[9px] uppercase tracking-wider text-[var(--text-3)]">Invited me</p>
               </div>
             </div>
@@ -199,6 +201,7 @@ export default function FriendsClient() {
                   disabled={!inputCode.trim() || referralMutation.isPending}
                   className="px-4 font-black"
                 >
+                  {referralMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                   Apply
                 </Button>
               </div>
@@ -228,7 +231,9 @@ export default function FriendsClient() {
               <FilterChip label="Theirs" active={filter === 'inbound'} onClick={() => setFilter('inbound')} />
             </div>
           </div>
-          {friends.length === 0 ? (
+          {isInitialLoading ? (
+            <LoadingState label="Loading referrals" className="min-h-[180px]" />
+          ) : friends.length === 0 ? (
             <div className="relic-frame flex flex-col items-center gap-2 py-8 text-center">
               <Users className="h-8 w-8 text-[var(--text-dim)]" />
               <p className="font-display text-[12px] text-[var(--text-3)]">No referrals yet</p>

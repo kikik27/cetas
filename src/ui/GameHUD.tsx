@@ -16,13 +16,14 @@ import { BATTLE_LIMIT_MS, BATTLE_TICK_CAP, PHASE } from '@/src/game/constants'
 import { useWallet } from '@/src/providers/WalletProvider'
 import { usePlayer } from '@/src/hooks/usePlayer'
 import { cn } from '@/src/lib/utils'
+import { LoadingState } from '@/src/components/ui/LoadingState'
 import { AlertTriangle, ScrollText, Shield, ShoppingBag } from 'lucide-react'
 
 type TrayId = 'shop' | 'bench' | 'intel' | 'log'
 
 export default function GameHUD() {
   const { authStatus } = useWallet()
-  const { data: player } = usePlayer(authStatus === 'authenticated')
+  const { data: player, isLoading: playerLoading } = usePlayer(authStatus === 'authenticated')
   const round         = useGameStore(s => s.round)
   const hp            = useGameStore(s => s.hp)
   const gold          = useGameStore(s => s.gold)
@@ -124,6 +125,7 @@ export default function GameHUD() {
 
   const boardCount = getBoardUnitCount(board)
   const isPrep = phase === PHASE.PREP
+  const isProfileLoading = authStatus === 'authenticated' && playerLoading && !player
   const visibleTray: TrayId = isPrep || activeTray === 'bench' ? activeTray : 'log'
   const trayTabs: Array<{ id: TrayId; label: string; icon: ComponentType<{ className?: string }> }> = isPrep
     ? [
@@ -156,6 +158,11 @@ export default function GameHUD() {
   return (
     <div className="game-hud-shell relative z-10 flex select-none flex-col gap-1.5 px-2 [padding-top:max(env(safe-area-inset-top),8px)] [padding-bottom:max(env(safe-area-inset-bottom),8px)]">
       <h1 className="sr-only">Celo Tactics</h1>
+      {isProfileLoading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[rgba(1,8,18,0.72)] px-8 backdrop-blur-sm">
+          <LoadingState compact label="Loading run" className="w-full max-w-[220px]" />
+        </div>
+      )}
 
       {/* 1 ── Top HUD */}
       <TopBar

@@ -13,7 +13,7 @@ export default function DailyChest() {
   const { authStatus } = useWallet()
   const isReady = authStatus === 'authenticated'
 
-  const { data: claimStatus } = useDailyClaimStatus(isReady)
+  const { data: claimStatus, isLoading } = useDailyClaimStatus(isReady)
   const openChestMutation     = useOpenChest()
 
   const [showModal, setShowModal] = useState(false)
@@ -21,9 +21,10 @@ export default function DailyChest() {
 
   const chestOpened = claimStatus?.claimed ?? false
   const reward      = openChestMutation.data ?? claimStatus?.reward
+  const isBusy      = !isReady || isLoading
 
   async function handleOpen() {
-    if (chestOpened || animating || openChestMutation.isPending) return
+    if (chestOpened || isBusy || animating || openChestMutation.isPending) return
     setAnimating(true)
     setTimeout(async () => {
       try {
@@ -87,11 +88,11 @@ export default function DailyChest() {
       {/* ── Chest button ── */}
       <button
         onClick={handleOpen}
-        disabled={chestOpened || !isReady}
+        disabled={chestOpened || isBusy}
         aria-label="Open daily reward"
         className={cn(
           'relic-frame flex w-full items-center gap-2.5 px-3 py-2.5 transition-all',
-          chestOpened || !isReady
+          chestOpened || isBusy
             ? 'cursor-not-allowed opacity-50'
             : 'cursor-pointer hover:border-[var(--gold-hi)] chest-glow',
           animating && 'chest-shake'
@@ -119,16 +120,16 @@ export default function DailyChest() {
           </p>
           <p className={cn(
             'text-[9px]',
-            chestOpened || !isReady
+            chestOpened || isBusy
               ? 'text-[var(--text-3)]'
               : 'animate-pulse font-semibold text-[var(--ok)]'
           )}>
-            {!isReady ? 'Loading…' : chestOpened ? 'Come back tomorrow' : 'XP available!'}
+            {isBusy ? 'Loading...' : chestOpened ? 'Come back tomorrow' : 'XP available!'}
           </p>
         </div>
 
         {/* XP badge — only when available */}
-        {!chestOpened && isReady && (
+        {!chestOpened && !isBusy && (
           <div className="flex items-center gap-1 rounded-lg border border-[rgba(74,158,255,0.4)]
                           bg-[rgba(74,158,255,0.1)] px-2 py-1">
             <Zap className="h-3 w-3 text-[var(--ally)]" />

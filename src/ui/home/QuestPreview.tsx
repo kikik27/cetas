@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { Loader2 } from 'lucide-react'
 import { useTasks } from '@/src/hooks/useTasks'
 import { useWallet } from '@/src/providers/WalletProvider'
 import { cn } from '@/src/lib/utils'
@@ -10,12 +11,13 @@ export default function QuestPreview() {
   const { authStatus } = useWallet()
   const isReady = authStatus === 'authenticated'
 
-  const { data: tasks = [] } = useTasks(isReady)
+  const { data: tasks = [], isLoading } = useTasks(isReady)
 
   const completedCount = tasks.filter(t => t.done).length
   const hasTasks       = tasks.length > 0
   const total          = hasTasks ? tasks.length : 0
   const allDone        = tasks.length > 0 && completedCount === tasks.length
+  const isBusy         = !isReady || isLoading
 
   return (
     <Link
@@ -39,7 +41,14 @@ export default function QuestPreview() {
           Daily Quests
         </p>
         <div className="mt-0.5 flex items-center gap-1">
-          {hasTasks
+          {isBusy
+            ? (
+                <span className="flex items-center gap-1 text-[9px] text-[var(--text-dim)]">
+                  <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                  Loading...
+                </span>
+              )
+            : hasTasks
             ? tasks.map(t => (
                 <span
                   key={t.id}
@@ -51,7 +60,7 @@ export default function QuestPreview() {
               ))
             : <span className="text-[9px] text-[var(--text-dim)]">No quests yet</span>
           }
-          {hasTasks && (
+          {hasTasks && !isBusy && (
             <span className="ml-1 text-[9px] text-[var(--text-3)]">
               {completedCount}/{total}
             </span>
@@ -63,7 +72,7 @@ export default function QuestPreview() {
         'flex-shrink-0 text-[9px] font-bold uppercase tracking-wider',
         allDone ? 'text-[var(--ok)]' : 'text-[var(--text-3)] group-hover:text-[var(--gold-mid)]'
       )}>
-        {allDone ? 'Done!' : '›'}
+        {isBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : allDone ? 'Done!' : '›'}
       </span>
     </Link>
   )

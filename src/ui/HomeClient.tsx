@@ -21,11 +21,12 @@ const LEAVES = [
 
 export default function HomeClient() {
   const { authStatus, player: walletPlayer } = useWallet()
-  const { data: queryPlayer } = usePlayer(authStatus === 'authenticated')
+  const { data: queryPlayer, isLoading } = usePlayer(authStatus === 'authenticated')
   const player = queryPlayer ?? walletPlayer
   const progress = player?.gameProgress
   const endlessStage = progress?.stage ?? player?.endlessStage ?? 1
   const hasProgress = Boolean(progress) || endlessStage > 1
+  const isPlayerLoading = authStatus === 'authenticated' && isLoading && !player
 
   return (
     <div className="flex h-full flex-col gap-3">
@@ -71,12 +72,12 @@ export default function HomeClient() {
             <div className="flex items-center justify-center gap-1.5">
               <Swords className="h-3.5 w-3.5 text-[var(--gold-mid)]" />
               <span className="font-display text-[11px] font-bold uppercase tracking-wider text-[var(--gold-hi)]">
-                {hasProgress ? 'Continue' : 'Endless'}
+                {isPlayerLoading ? 'Loading' : hasProgress ? 'Continue' : 'Endless'}
               </span>
             </div>
             <div className="mt-1 flex items-center justify-center gap-1.5">
               <span className="rounded-md border border-[rgba(200,146,42,0.3)] bg-[rgba(200,146,42,0.1)] px-1.5 py-0.5 font-display text-[8px] font-bold uppercase tracking-wider text-[var(--text-1)]">
-                Stage {endlessStage}
+                {isPlayerLoading ? 'Syncing' : `Stage ${endlessStage}`}
               </span>
               {progress && (
                 <>

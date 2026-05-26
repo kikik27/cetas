@@ -34,9 +34,15 @@ export default function TopBar({ round, hp, gold, boardUnitCount, maxBoardSlots,
       </Link>
 
       {/* ── Title ── */}
-      <span className="hidden font-display text-[10px] font-bold uppercase tracking-[0.22em] text-gold-gradient min-[400px]:block">
-        CETAS
-      </span>
+      <Image
+        src="/logo.png"
+        alt="CETAS"
+        width={52}
+        height={22}
+        loading="eager"
+        unoptimized
+        className="hidden h-6 w-auto object-contain drop-shadow-[0_0_10px_rgba(245,216,120,0.28)] min-[400px]:block"
+      />
 
       <div className="flex-1" />
 

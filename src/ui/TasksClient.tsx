@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { CheckSquare } from 'lucide-react'
 import { useTasks, useClaimTask } from '@/src/hooks/useTasks'
 import { useWallet } from '@/src/providers/WalletProvider'
+import { LoadingRows } from '@/src/components/ui/LoadingState'
 import TaskItem from './tasks/TaskItem'
 import BottomNav from './home/BottomNav'
 
@@ -15,6 +16,7 @@ export default function TasksClient() {
   const claimMutation = useClaimTask()
 
   const completedCount = tasks.filter(t => t.done).length
+  const isInitialLoading = !isReady || isLoading
 
   return (
     <div className="flex h-full flex-col gap-3">
@@ -36,7 +38,7 @@ export default function TasksClient() {
           Daily Quests
         </h1>
         <span className="ml-auto font-display text-[11px] text-[var(--ok)]">
-          {completedCount}/{tasks.length || '—'}
+          {isInitialLoading ? 'loading' : `${completedCount}/${tasks.length || '—'}`}
         </span>
       </div>
 
@@ -53,13 +55,8 @@ export default function TasksClient() {
 
       {/* ── Scrollable list ── */}
       <div className="game-scroll flex flex-1 flex-col gap-2 overflow-y-auto">
-        {isLoading
-          ? Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                className="relic-frame h-[60px] animate-pulse rounded-xl bg-[rgba(11,78,162,0.1)]"
-              />
-            ))
+        {isInitialLoading
+          ? <LoadingRows count={6} />
           : tasks.length === 0 ? (
               <div className="relic-frame flex flex-col items-center gap-2 py-8 text-center">
                 <CheckSquare className="h-8 w-8 text-[var(--text-dim)]" />

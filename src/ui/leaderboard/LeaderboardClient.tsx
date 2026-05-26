@@ -24,7 +24,7 @@ const RANK_STYLES = [
 
 export default function LeaderboardClient() {
   const { player } = useWallet()
-  const { data, isLoading } = useLeaderboard()
+  const { data, isLoading, isFetching } = useLeaderboard()
 
   const leaderboard = data?.leaderboard ?? []
   const myRank      = data?.myRank ?? null
@@ -41,7 +41,9 @@ export default function LeaderboardClient() {
           <h1 className="font-display text-[15px] font-bold uppercase tracking-[0.15em] text-[var(--gold-hi)]">
             Leaderboard
           </h1>
-          <p className="text-[10px] text-[var(--text-3)]">Hall of Champions</p>
+          <p className="text-[10px] text-[var(--text-3)]">
+            {isFetching && !isLoading ? 'Syncing ranks...' : 'Hall of Champions'}
+          </p>
         </div>
         <div className="ml-auto text-right">
           <p className="font-display text-[13px] font-bold text-[var(--gold-hi)]">

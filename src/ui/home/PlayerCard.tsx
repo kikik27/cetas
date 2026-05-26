@@ -12,7 +12,7 @@ import { cn } from '@/src/lib/utils'
 export default function PlayerCard() {
   const { player: walletPlayer, authStatus, updatePlayer } = useWallet()
   const updateMutation = useUpdatePlayer()
-  const { data: queryPlayer } = usePlayer(authStatus === 'authenticated')
+  const { data: queryPlayer, isLoading } = usePlayer(authStatus === 'authenticated')
   const player = queryPlayer ?? walletPlayer
 
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -79,6 +79,10 @@ export default function PlayerCard() {
     : nameCheck.status === 'taken' || nameCheck.status === 'invalid'
     ? nameCheck.message
     : null
+
+  if (authStatus === 'authenticated' && isLoading && !player) {
+    return <PlayerCardLoading />
+  }
 
   return (
     <>
@@ -246,5 +250,19 @@ export default function PlayerCard() {
         </div>
       </section>
     </>
+  )
+}
+
+function PlayerCardLoading() {
+  return (
+    <section className="relic-frame flex items-center gap-3 px-4 py-4">
+      <div className="h-16 w-16 flex-shrink-0 animate-pulse rounded-xl border-2 border-[var(--border-gold)] bg-[rgba(200,146,42,0.08)]" />
+      <div className="min-w-0 flex-1 space-y-2">
+        <div className="h-3 w-24 animate-pulse rounded-full bg-[rgba(200,146,42,0.16)]" />
+        <div className="h-4 w-36 animate-pulse rounded-full bg-[rgba(255,255,255,0.08)]" />
+        <div className="h-2 w-full animate-pulse rounded-full bg-[rgba(11,78,162,0.25)]" />
+      </div>
+      <div className="h-14 w-16 flex-shrink-0 animate-pulse rounded-xl border border-[var(--border-gold)] bg-[rgba(200,146,42,0.08)]" />
+    </section>
   )
 }
