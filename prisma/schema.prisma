@@ -12,17 +12,18 @@ datasource db {
 
 // ─── Player ───────────────────────────────────────────────────────────────────
 model Player {
-  id            String   @id @default(cuid())
-  walletAddress String   @unique @map("wallet_address")
-  name          String   @default("Commander")
-  avatarIdx     Int      @default(1) @map("avatar_idx")
-  totalPoints   Int      @default(0) @map("total_points")
-  level         Int      @default(1)
-  streakDays    Int      @default(0) @map("streak_days")
-  lastLoginAt   DateTime @default(now()) @map("last_login_at")
-  referralCode  String   @unique @map("referral_code")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id               String   @id @default(cuid())
+  walletAddress    String   @unique @map("wallet_address")
+  name             String   @unique
+  avatarIdx        Int      @default(1) @map("avatar_idx")
+  totalPoints      Int      @default(0) @map("total_points")
+  level            Int      @default(1)
+  streakDays       Int      @default(0) @map("streak_days")
+  lastLoginAt      DateTime @default(now()) @map("last_login_at")
+  referralCode     String   @unique @map("referral_code")
+  nameChangesLeft  Int      @default(1) @map("name_changes_left")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   // Relations
   taskProgress  TaskProgress[]

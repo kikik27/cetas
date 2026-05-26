@@ -1,18 +1,21 @@
-// GET /api/leaderboard?limit=50&wallet=0x...  — top players + caller's rank
+// GET /api/leaderboard?limit=50 — top players + caller's rank
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/src/lib/db'
+import { resolveAuth } from '@/src/lib/api-auth'
 import type { LeaderboardEntryDTO } from '@/src/lib/api-types'
 
 export async function GET(req: NextRequest) {
-  const limit  = Math.min(parseInt(req.nextUrl.searchParams.get('limit') ?? '50'), 100)
-  const wallet = req.nextUrl.searchParams.get('wallet')
+  const limit = Math.min(parseInt(req.nextUrl.searchParams.get('limit') ?? '50'), 100)
+
+  // Leaderboard is public — auth is optional (only needed for myRank)
+  const auth = await resolveAuth(req)
 
   try {
     const entries = await prisma.leaderboardEntry.findMany({
       take:    limit,
       orderBy: { score: 'desc' },
-      include: { player: { select: { name: true, avatarIdx: true, walletAddress: true } } },
+      include: { player: { select: { name: true, avatarIdx: true } } },
     })
 
     const leaderboard: LeaderboardEntryDTO[] = entries.map((e, i) => ({
@@ -26,16 +29,14 @@ export async function GET(req: NextRequest) {
       tier:      e.tier,
     }))
 
-    // Find caller's rank if wallet provided
     let myRank: number | null = null
-    if (wallet) {
-      const player = await prisma.player.findUnique({
-        where: { walletAddress: wallet.toLowerCase() },
-        include: { leaderboard: true },
+    if (auth) {
+      const myEntry = await prisma.leaderboardEntry.findUnique({
+        where: { playerId: auth.playerId },
       })
-      if (player?.leaderboard) {
+      if (myEntry) {
         const countAbove = await prisma.leaderboardEntry.count({
-          where: { score: { gt: player.leaderboard.score } },
+          where: { score: { gt: myEntry.score } },
         })
         myRank = countAbove + 1
       }

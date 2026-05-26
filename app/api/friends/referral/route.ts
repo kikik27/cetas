@@ -2,60 +2,49 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/src/lib/db'
+import { requireAuth } from '@/src/lib/api-auth'
+import { referralCodeBodySchema, getZodMessage } from '@/src/lib/validation'
 
 const REFERRAL_REWARD = 100
 
 export async function POST(req: NextRequest) {
+  const { auth, error } = await requireAuth(req)
+  if (error) return error
+
   try {
-    const body = await req.json() as { wallet: string; code: string }
-    const { wallet, code } = body
-
-    if (!wallet || !code) {
-      return NextResponse.json({ error: 'wallet and code required' }, { status: 400 })
+    const body = await req.json().catch(() => ({}))
+    const parsed = referralCodeBodySchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: getZodMessage(parsed.error) }, { status: 400 })
     }
+    // schema already trims + uppercases
+    const { code } = parsed.data
 
-    const normalized = code.trim().toUpperCase()
-
-    const [player, referrer] = await Promise.all([
-      prisma.player.findUnique({ where: { walletAddress: wallet.toLowerCase() } }),
-      prisma.player.findUnique({ where: { referralCode: normalized } }),
-    ])
-
-    if (!player)   return NextResponse.json({ error: 'Player not found' }, { status: 404 })
-    if (!referrer) return NextResponse.json({ error: 'Invalid referral code' }, { status: 400 })
-    if (referrer.id === player.id) {
+    const referrer = await prisma.player.findUnique({ where: { referralCode: code } })
+    if (!referrer) {
+      return NextResponse.json({ error: 'Invalid referral code' }, { status: 400 })
+    }
+    if (referrer.id === auth.playerId) {
       return NextResponse.json({ error: 'Cannot use your own referral code' }, { status: 400 })
     }
 
-    // Check if already used a referral code
-    const existingReferral = await prisma.referral.findUnique({
-      where: { referredId: player.id },
-    })
-    if (existingReferral) {
+    const existing = await prisma.referral.findUnique({ where: { referredId: auth.playerId } })
+    if (existing) {
       return NextResponse.json({ error: 'Already used a referral code' }, { status: 400 })
     }
 
-    // Create referral + award points to the new player
     const [, updatedPlayer] = await prisma.$transaction([
       prisma.referral.create({
-        data: {
-          referrerId: referrer.id,
-          referredId: player.id,
-          code:       normalized,
-        },
+        data: { referrerId: referrer.id, referredId: auth.playerId, code },
       }),
       prisma.player.update({
-        where: { id: player.id },
+        where: { id: auth.playerId },
         data:  { totalPoints: { increment: REFERRAL_REWARD } },
       }),
     ])
 
     return NextResponse.json({
-      data: {
-        accepted:    true,
-        reward:      REFERRAL_REWARD,
-        totalPoints: updatedPlayer.totalPoints,
-      },
+      data: { accepted: true, reward: REFERRAL_REWARD, totalPoints: updatedPlayer.totalPoints },
     })
   } catch (err) {
     console.error('[POST /api/friends/referral]', err)

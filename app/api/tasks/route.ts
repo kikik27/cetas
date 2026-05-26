@@ -1,8 +1,8 @@
-// GET  /api/tasks?wallet=0x...&date=YYYY-MM-DD  — fetch tasks + today's progress
-// POST /api/tasks/claim                          — claim a completed task
+// GET /api/tasks?date=YYYY-MM-DD  — fetch tasks + today's progress
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/src/lib/db'
+import { requireAuth } from '@/src/lib/api-auth'
 import type { TaskWithProgressDTO } from '@/src/lib/api-types'
 
 function todayKey(): string {
@@ -10,31 +10,21 @@ function todayKey(): string {
 }
 
 export async function GET(req: NextRequest) {
-  const wallet = req.nextUrl.searchParams.get('wallet')
-  const date   = req.nextUrl.searchParams.get('date') ?? todayKey()
+  const { auth, error } = await requireAuth(req)
+  if (error) return error
 
-  if (!wallet) {
-    return NextResponse.json({ error: 'wallet param required' }, { status: 400 })
-  }
+  const date = req.nextUrl.searchParams.get('date') ?? todayKey()
 
   try {
-    const player = await prisma.player.findUnique({
-      where: { walletAddress: wallet.toLowerCase() },
-    })
-    if (!player) {
-      return NextResponse.json({ error: 'Player not found' }, { status: 404 })
-    }
-
-    // Fetch all active task definitions
-    const defs = await prisma.taskDefinition.findMany({
-      where:   { active: true },
-      orderBy: { sortOrder: 'asc' },
-    })
-
-    // Fetch today's progress for this player
-    const progresses = await prisma.taskProgress.findMany({
-      where: { playerId: player.id, date },
-    })
+    const [defs, progresses] = await Promise.all([
+      prisma.taskDefinition.findMany({
+        where:   { active: true },
+        orderBy: { sortOrder: 'asc' },
+      }),
+      prisma.taskProgress.findMany({
+        where: { playerId: auth.playerId, date },
+      }),
+    ])
 
     const progressMap = new Map(progresses.map(p => [p.taskId, p]))
 

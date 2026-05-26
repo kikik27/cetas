@@ -1,23 +1,31 @@
 /**
- * Prisma client singleton — Prisma 7 requires a driver adapter.
- * Using @prisma/adapter-pg (pg / node-postgres) for Supabase PostgreSQL.
+ * Prisma client singleton — Neon Serverless Postgres.
  *
- * Prevents multiple instances during Next.js dev hot-reload.
+ * IMPORTANT: DATABASE_URL must be in .env.local (not .env) so Next.js
+ * loads it before any module code runs.
+ *
+ * Uses @neondatabase/serverless + @prisma/adapter-neon.
+ * Prisma 7 requires a driver adapter (url no longer in schema.prisma).
  */
 import { PrismaClient } from '@prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
-import pg from 'pg'
+import { PrismaNeon } from '@prisma/adapter-neon'
+import { neonConfig } from '@neondatabase/serverless'
+import ws from 'ws'
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
+// WebSocket required for interactive transactions in Node.js runtime
+neonConfig.webSocketConstructor = ws
+
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined }
 
 function createPrismaClient(): PrismaClient {
   const connectionString = process.env.DATABASE_URL
   if (!connectionString) {
-    throw new Error('DATABASE_URL environment variable is not set')
+    throw new Error(
+      'DATABASE_URL is not set. Make sure it is defined in .env.local (not .env — Next.js does not auto-load plain .env files).'
+    )
   }
 
-  const pool    = new pg.Pool({ connectionString })
-  const adapter = new PrismaPg(pool)
+  const adapter = new PrismaNeon({ connectionString })
 
   return new PrismaClient({
     adapter,
@@ -25,6 +33,5 @@ function createPrismaClient(): PrismaClient {
   })
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient()
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+export const prisma: PrismaClient =
+  globalForPrisma.prisma ?? (globalForPrisma.prisma = createPrismaClient())
