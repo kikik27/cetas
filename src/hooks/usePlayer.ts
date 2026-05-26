@@ -58,5 +58,7 @@ export async function syncPlayerQuery(
   }
 
   await qc.invalidateQueries({ queryKey: playerKeys.me })
+  await qc.invalidateQueries({ queryKey: ['leaderboard'] })
   await qc.refetchQueries({ queryKey: playerKeys.me, type: 'active' })
+  await qc.refetchQueries({ queryKey: ['leaderboard'], type: 'active' })
 }

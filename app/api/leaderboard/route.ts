@@ -89,7 +89,10 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ data: { leaderboard, myRank } })
+    return NextResponse.json(
+      { data: { leaderboard, myRank } },
+      { headers: { 'Cache-Control': 'no-store' } }
+    )
   } catch (err) {
     console.error('[GET /api/leaderboard]', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

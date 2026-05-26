@@ -23,6 +23,7 @@ export function useLeaderboard(limit = 50) {
   return useQuery({
     queryKey: leaderboardKeys.list(limit),
     queryFn:  () => fetchLeaderboard(limit),
-    staleTime: 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: 'always',
   })
 }
