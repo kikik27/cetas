@@ -25,8 +25,8 @@ export default function FriendsClient() {
   const [codeStatus, setCodeStatus] = useState<'idle' | 'success' | 'error'>('idle')
 
   const referralCode = player?.referralCode ?? '------'
-  const pendingCount = friends.filter(f => !f.rewarded).length
-  const claimedCount = friends.filter(f => f.rewarded).length
+  const pendingCount = friends.filter(f => f.claimable && !f.rewarded).length
+  const claimedCount = friends.filter(f => f.claimable && f.rewarded).length
 
   // Check if this player already used a referral code
   // (server returns 400 "Already used" if they try again)
@@ -198,13 +198,13 @@ export default function FriendsClient() {
         {/* Friends list */}
         <div className="flex flex-col gap-2">
           <p className="px-1 font-display text-[10px] uppercase tracking-wider text-[var(--text-3)]">
-            Your Friends
+            Referral Network
           </p>
           {friends.length === 0 ? (
             <div className="relic-frame flex flex-col items-center gap-2 py-8 text-center">
               <Users className="h-8 w-8 text-[var(--text-dim)]" />
-              <p className="font-display text-[12px] text-[var(--text-3)]">No friends yet</p>
-              <p className="text-[10px] text-[var(--text-dim)]">Share your referral code to invite friends</p>
+              <p className="font-display text-[12px] text-[var(--text-3)]">No referrals yet</p>
+              <p className="text-[10px] text-[var(--text-dim)]">Invite people or use a code to build your network</p>
             </div>
           ) : (
             friends.map(friend => (
@@ -229,6 +229,7 @@ function FriendRow({
 }: { friend: FriendDTO; onClaim: () => void; claiming: boolean }) {
   const pad      = String(friend.avatarIdx).padStart(2, '0')
   const joinDate = new Date(friend.joinedAt).toLocaleDateString('en', { month: 'short', day: 'numeric' })
+  const relationLabel = friend.relation === 'outbound' ? 'You invited' : 'Invited you'
 
   return (
     <div className={cn(
@@ -245,12 +246,17 @@ function FriendRow({
           <Crown className="h-2.5 w-2.5 flex-shrink-0 text-[var(--gold-mid)]" />
           <p className="truncate font-display text-[12px] font-bold text-[var(--text-1)]">{friend.name}</p>
         </div>
-        <p className="text-[9px] text-[var(--text-3)]">Joined {joinDate}</p>
+        <p className="text-[9px] text-[var(--text-3)]">{relationLabel} · {joinDate}</p>
       </div>
-      {friend.rewarded ? (
+      {friend.claimable && friend.rewarded ? (
         <div className="flex items-center gap-1 rounded-lg border border-[rgba(61,186,106,0.3)] bg-[rgba(61,186,106,0.1)] px-2.5 py-1">
           <Check className="h-3 w-3 text-[var(--ok)]" />
           <span className="font-display text-[9px] font-bold uppercase tracking-wider text-[var(--ok)]">Claimed</span>
+        </div>
+      ) : !friend.claimable ? (
+        <div className="flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[rgba(4,16,33,0.6)] px-2.5 py-1">
+          <Users className="h-3 w-3 text-[var(--text-3)]" />
+          <span className="font-display text-[9px] font-bold uppercase tracking-wider text-[var(--text-3)]">Inbound</span>
         </div>
       ) : (
         <button

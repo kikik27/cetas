@@ -64,7 +64,7 @@ export default function Controls({
         </div>
 
         <p className="text-center text-[10px] text-[var(--text-3)]">
-          Tap unit → tap tile to place · Tap selected unit to sell
+          Units recall after battle · Sell is the only permanent removal
         </p>
       </div>
     )

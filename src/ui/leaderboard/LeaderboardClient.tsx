@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { Trophy, Swords, Shield, Flame, Medal, Star } from 'lucide-react'
+import { Trophy, Swords, Shield, Flame, Medal, Star, Users } from 'lucide-react'
 import { useLeaderboard } from '@/src/hooks/useLeaderboard'
 import { useWallet } from '@/src/providers/WalletProvider'
 import BottomNav from '@/src/ui/home/BottomNav'
@@ -28,6 +28,7 @@ export default function LeaderboardClient() {
 
   const leaderboard = data?.leaderboard ?? []
   const myRank      = data?.myRank ?? null
+  const topStreak   = leaderboard.reduce((best, p) => Math.max(best, p.streak), 0)
 
   return (
     <div className="flex h-full flex-col gap-3">
@@ -53,8 +54,8 @@ export default function LeaderboardClient() {
       {/* Stats row */}
       <div className="grid flex-shrink-0 grid-cols-3 gap-2">
         {[
-          { icon: <Trophy className="h-4 w-4 text-[var(--gold-hi)]" />, label: 'Top Wins',    value: leaderboard[0]?.wins.toString() ?? '—' },
-          { icon: <Swords className="h-4 w-4 text-[var(--enemy)]" />,  label: 'Best Streak', value: leaderboard[0]?.streak.toString() ?? '—' },
+          { icon: <Trophy className="h-4 w-4 text-[var(--gold-hi)]" />, label: 'Top Points', value: leaderboard[0]?.score.toLocaleString() ?? '-' },
+          { icon: <Swords className="h-4 w-4 text-[var(--enemy)]" />,  label: 'Best Streak', value: topStreak ? topStreak.toString() : '-' },
           { icon: <Shield className="h-4 w-4 text-[var(--ally)]" />,   label: 'Players',     value: leaderboard.length.toString() },
         ].map(s => (
           <div key={s.label} className="relic-frame flex flex-col items-center gap-1 px-2 py-3">
@@ -67,11 +68,26 @@ export default function LeaderboardClient() {
 
       {/* Player list */}
       <div className="relic-frame game-scroll flex flex-1 flex-col gap-0 overflow-y-auto overflow-x-hidden p-0">
-        {isLoading
-          ? Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="h-[60px] animate-pulse border-b border-[var(--border)] bg-[rgba(11,78,162,0.05)]" />
-            ))
-          : leaderboard.map((p, i) => {
+        {isLoading ? (
+          Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="h-[60px] animate-pulse border-b border-[var(--border)] bg-[rgba(11,78,162,0.05)]" />
+          ))
+        ) : leaderboard.length === 0 ? (
+          <div className="flex min-h-[260px] flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[rgba(200,146,42,0.25)] bg-[rgba(200,146,42,0.08)]">
+              <Users className="h-5 w-5 text-[var(--gold-hi)]" />
+            </div>
+            <div>
+              <p className="font-display text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--text-1)]">
+                No ranked players yet
+              </p>
+              <p className="mt-1 max-w-[220px] text-[10px] leading-relaxed text-[var(--text-3)]">
+                Earn points or keep a login streak to appear here.
+              </p>
+            </div>
+          </div>
+        ) : (
+          leaderboard.map((p, i) => {
               const isMe      = p.playerId === player?.id
               const rankStyle = RANK_STYLES[i] ?? 'text-[var(--text-3)]'
               const tierStyle = TIER_COLORS[p.tier] ?? 'text-[var(--text-3)] border-[var(--border)] bg-transparent'
@@ -121,12 +137,12 @@ export default function LeaderboardClient() {
                     <p className="font-display text-[13px] font-bold tabular-nums text-[var(--gold-hi)]">
                       {p.score.toLocaleString()}
                     </p>
-                    <p className="text-[9px] text-[var(--text-3)]">{p.wins}W</p>
+                    <p className="text-[9px] text-[var(--text-3)]">Stage {p.wins + 1}</p>
                   </div>
                 </div>
               )
             })
-        }
+        )}
       </div>
 
       <BottomNav />

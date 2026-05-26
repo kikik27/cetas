@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { CheckSquare } from 'lucide-react'
 import { useTasks, useClaimTask } from '@/src/hooks/useTasks'
 import { useWallet } from '@/src/providers/WalletProvider'
 import TaskItem from './tasks/TaskItem'
@@ -59,6 +60,13 @@ export default function TasksClient() {
                 className="relic-frame h-[60px] animate-pulse rounded-xl bg-[rgba(11,78,162,0.1)]"
               />
             ))
+          : tasks.length === 0 ? (
+              <div className="relic-frame flex flex-col items-center gap-2 py-8 text-center">
+                <CheckSquare className="h-8 w-8 text-[var(--text-dim)]" />
+                <p className="font-display text-[12px] text-[var(--text-3)]">No quests yet</p>
+                <p className="text-[10px] text-[var(--text-dim)]">Daily quests will appear after setup</p>
+              </div>
+            )
           : tasks.map(task => (
               <TaskItem
                 key={task.id}

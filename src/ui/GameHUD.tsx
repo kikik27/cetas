@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useGameStore } from '../game/state/gameStore'
 import { getBoardUnitCount } from '../game/systems/boardSystem'
-import { evaluateBattleEnd } from '../game/systems/combatSystem'
 import PixiBoard from '../game/renderer/PixiBoard'
 import TopBar from './TopBar'
 import EnemyIntel from './EnemyIntel'
@@ -13,9 +12,13 @@ import Controls from './Controls'
 import BattleLog from './BattleLog'
 import RoundModal from './RoundModal'
 import { audioManager } from '@/src/lib/audioManager'
-import { BATTLE_LIMIT_MS, BATTLE_TICK_CAP, MAX_ROUNDS, PHASE } from '@/src/game/constants'
+import { BATTLE_LIMIT_MS, BATTLE_TICK_CAP, PHASE } from '@/src/game/constants'
+import { useWallet } from '@/src/providers/WalletProvider'
+import { usePlayer } from '@/src/hooks/usePlayer'
 
 export default function GameHUD() {
+  const { authStatus } = useWallet()
+  const { data: player } = usePlayer(authStatus === 'authenticated')
   const round         = useGameStore(s => s.round)
   const hp            = useGameStore(s => s.hp)
   const gold          = useGameStore(s => s.gold)
@@ -31,7 +34,10 @@ export default function GameHUD() {
   const enemyPreview  = useGameStore(s => s.enemyPreview)
   const log           = useGameStore(s => s.log)
   const projectiles   = useGameStore(s => s.projectiles)
+  const lastBattleResult = useGameStore(s => s.lastBattleResult)
 
+  const setSavedStage  = useGameStore(s => s.setSavedStage)
+  const setSavedProgress = useGameStore(s => s.setSavedProgress)
   const clickBoardCell = useGameStore(s => s.clickBoardCell)
   const clickBenchSlot = useGameStore(s => s.clickBenchSlot)
   const buyUnit        = useGameStore(s => s.buyUnit)
@@ -46,6 +52,14 @@ export default function GameHUD() {
   const rafRef    = useRef<number>(0)
   const lastTsRef = useRef<number>(0)
   useEffect(() => { tickRef.current = tickBattle }, [tickBattle])
+
+  useEffect(() => {
+    if (player?.gameProgress) {
+      setSavedProgress(player.gameProgress)
+      return
+    }
+    if (player?.endlessStage) setSavedStage(player.endlessStage)
+  }, [player?.endlessStage, player?.gameProgress, setSavedProgress, setSavedStage])
 
   useEffect(() => {
     if (!battleRunning) {
@@ -71,8 +85,8 @@ export default function GameHUD() {
   })
 
   useEffect(() => {
-    if (phase !== 'battle' || battleRunning) return
-    const result = evaluateBattleEnd(board, round)
+    if (phase !== 'battle' || battleRunning || !lastBattleResult) return
+    const result = lastBattleResult
     const showResultModal = async () => {
     if (hp <= 0) {
       setModal({
@@ -88,20 +102,20 @@ export default function GameHUD() {
         title: 'Victory!',
         titleColor: 'var(--ok)',
         description: `${result.aliveCount} units survived! +${result.goldEarned} gold. Slot unlocked!`,
-        buttonLabel: round >= MAX_ROUNDS ? 'Play Again' : `Round ${round + 1} →`,
+        buttonLabel: `Stage ${round + 1} ->`,
       })
     } else {
       setModal({
         show: true,
         title: 'Defeat!',
         titleColor: 'var(--warn)',
-        description: `−${result.hpLost} HP. Remaining HP: ${Math.max(0, hp - result.hpLost)}. Slot unlocked!`,
-        buttonLabel: round >= MAX_ROUNDS ? 'Play Again' : `Round ${round + 1} →`,
+        description: `-${result.hpLost} HP. Remaining HP: ${hp}. Slot unlocked!`,
+        buttonLabel: hp <= 0 ? 'Play Again' : `Stage ${round + 1} ->`,
       })
     }
     }
     void showResultModal()
-  }, [battleRunning, board, hp, phase, round])
+  }, [battleRunning, hp, lastBattleResult, phase, round])
 
   const boardCount = getBoardUnitCount(board)
   const isPrep = phase === PHASE.PREP

@@ -148,7 +148,6 @@ async function createPlayerProfile(input: {
           avatarIdx:        input.avatarIdx,
           referralCode:     generateReferralCode(),
           lastLoginAt:      new Date(),
-          nameChangesLeft:  1,
         },
       })
     } catch (err) {

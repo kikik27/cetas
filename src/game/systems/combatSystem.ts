@@ -14,18 +14,20 @@ import {
 // ─── Enemy generation ─────────────────────────────────────────────────────────
 
 export function generateEnemyPreview(round: number, maxBoardSlots: number): EnemyPreview[] {
-  const maxEnemy = Math.min(maxBoardSlots + 2, 12)
-  const count = Math.min(2 + round, maxEnemy)
-  const tier = Math.min(Math.floor(round / 2), 2)
+  const maxEnemy = Math.min(maxBoardSlots + 2, 14)
+  const count = Math.min(2 + Math.floor(round * 0.75), maxEnemy)
+  const tier = Math.min(Math.floor(round / 3), 2)
+  const stageScale = getStageStatScale(round)
   const pool = UNIT_DEFS.filter(u => u.cost <= 1 + tier)
   const previews: EnemyPreview[] = []
   for (let i = 0; i < count; i++) {
     const def = pool[i % pool.length]
-    const stars: 1 | 2 = round >= 4 && i % 3 === 0 ? 2 : 1
-    const m = stars === 2 ? STAR2_MULTIPLIER : 1
+    const stars: 1 | 2 | 3 = getEnemyStars(round, i)
+    const starScale = stars === 3 ? 2.6 : stars === 2 ? STAR2_MULTIPLIER : 1
+    const m = starScale * stageScale
     previews.push({
       id: def.id, name: def.name, stars,
-      atk: Math.round(def.atk * m), hp: Math.round(def.hp * m), spd: def.spd,
+      atk: Math.round(def.atk * m), hp: Math.round(def.hp * m), spd: Number((def.spd * Math.min(1.35, 1 + round * 0.015)).toFixed(2)),
       avatarIndex: def.avatarIndex, traitLabel: def.traitLabel,
     })
   }
@@ -36,22 +38,53 @@ export function generateEnemies(board: BoardGrid, round: number, maxBoardSlots: 
   const b: BoardGrid = board.map(row => [...row])
   for (let r = 0; r < 4; r++) for (let c = 0; c < COLS; c++) b[r][c] = null
 
-  const maxEnemy = Math.min(maxBoardSlots + 2, 12)
-  const count = Math.min(2 + round, maxEnemy)
-  const tier = Math.min(Math.floor(round / 2), 2)
+  const maxEnemy = Math.min(maxBoardSlots + 2, 14)
+  const count = Math.min(2 + Math.floor(round * 0.75), maxEnemy)
+  const tier = Math.min(Math.floor(round / 3), 2)
   const pool = UNIT_DEFS.filter(u => u.cost <= 1 + tier)
 
   for (let i = 0; i < count; i++) {
     const def = pool[Math.floor(Math.random() * pool.length)]
-    const stars: 1 | 2 = round >= 4 && Math.random() < ENEMY_STAR2_PROB ? 2 : 1
+    const stars = rollEnemyStars(round)
+    const enemy = scaleEnemyUnit(makeUnit(def, stars, true), round)
     let placed = false
     for (let attempt = 0; attempt < 20 && !placed; attempt++) {
       const r = 1 + Math.floor(Math.random() * 3)   // rows 1–3 (row 0 = building)
       const c = Math.floor(Math.random() * COLS)
-      if (!b[r][c]) { b[r][c] = makeUnit(def, stars, true); placed = true }
+      if (!b[r][c]) { b[r][c] = enemy; placed = true }
     }
   }
   return b
+}
+
+function getStageStatScale(stage: number): number {
+  return 1 + Math.max(0, stage - 1) * 0.14
+}
+
+function getEnemyStars(stage: number, index: number): 1 | 2 | 3 {
+  if (stage >= 12 && index % 5 === 0) return 3
+  if (stage >= 4 && index % 3 === 0) return 2
+  return 1
+}
+
+function rollEnemyStars(stage: number): 1 | 2 | 3 {
+  if (stage >= 12 && Math.random() < 0.12) return 3
+  if (stage >= 4 && Math.random() < ENEMY_STAR2_PROB) return 2
+  return 1
+}
+
+function scaleEnemyUnit(unit: Unit, stage: number): Unit {
+  const statScale = getStageStatScale(stage)
+  const speedScale = Math.min(1.35, 1 + stage * 0.015)
+  const maxHp = Math.round(unit.maxHp * statScale)
+
+  return {
+    ...unit,
+    maxHp,
+    curHp: maxHp,
+    atkVal: Math.round(unit.atkVal * statScale),
+    spd: Number((unit.spd * speedScale).toFixed(2)),
+  }
 }
 
 // ─── Range helpers ────────────────────────────────────────────────────────────
@@ -277,8 +310,8 @@ export function evaluateBattleEnd(board: BoardGrid, round: number): BattleEndRes
   const win = enemiesAlive.length === 0
   return {
     win,
-    goldEarned:   win ? WIN_GOLD_BONUS + round : 0,
-    hpLost:       win ? 0 : 10 + enemiesAlive.length * 6,
+    goldEarned:   win ? WIN_GOLD_BONUS + Math.floor(round / 3) : 0,
+    hpLost:       win ? 0 : Math.min(40, 8 + Math.floor(round * 1.5) + enemiesAlive.length * 4),
     slotsGained:  win ? 1 : 0,
     aliveCount:   alliesAlive.length,
     enemiesAlive: enemiesAlive.length,

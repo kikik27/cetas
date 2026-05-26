@@ -13,6 +13,23 @@ export interface ApiError {
 export type ApiResult<T> = ApiResponse<T> | ApiError
 
 // ─── Player ───────────────────────────────────────────────────────────────────
+export interface SavedGameUnitDTO {
+  id: string
+  stars: 1 | 2 | 3
+}
+
+export type SavedGameBoardDTO = (SavedGameUnitDTO | null)[][]
+export type SavedGameBenchDTO = (SavedGameUnitDTO | null)[]
+
+export interface PlayerGameProgressDTO {
+  stage: number
+  hp: number
+  gold: number
+  maxBoardSlots: number
+  board: SavedGameBoardDTO
+  bench: SavedGameBenchDTO
+}
+
 export interface PlayerDTO {
   id:              string
   walletAddress:   string
@@ -20,6 +37,8 @@ export interface PlayerDTO {
   avatarIdx:       number
   totalPoints:     number
   level:           number
+  endlessStage:    number
+  gameProgress:    PlayerGameProgressDTO | null
   streakDays:      number
   referralCode:    string
   lastLoginAt:     string
@@ -79,6 +98,8 @@ export interface FriendDTO {
   avatarIdx: number
   joinedAt:  string
   rewarded:  boolean
+  relation:  'outbound' | 'inbound'
+  claimable: boolean
 }
 
 // ─── Leaderboard ─────────────────────────────────────────────────────────────

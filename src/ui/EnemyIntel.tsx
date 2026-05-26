@@ -36,7 +36,7 @@ export default function EnemyIntel({ enemies, round }: EnemyIntelProps) {
       <div className="mb-2.5 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-3.5 w-3.5 text-[var(--warn)]" />
-          <span className="label">Enemy Forces — Round {round}</span>
+          <span className="label">Enemy Forces — Stage {round}</span>
         </div>
         <div
           className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"

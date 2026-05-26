@@ -4,14 +4,16 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { Crown, Flame, Pencil, X, Check, Loader2, CircleCheck, CircleX } from 'lucide-react'
 import { useWallet } from '@/src/providers/WalletProvider'
-import { useUpdatePlayer } from '@/src/hooks/usePlayer'
+import { usePlayer, useUpdatePlayer } from '@/src/hooks/usePlayer'
 import { useCheckName } from '@/src/hooks/useCheckName'
 import AvatarPicker from './AvatarPicker'
 import { cn } from '@/src/lib/utils'
 
 export default function PlayerCard() {
-  const { player, updatePlayer } = useWallet()
+  const { player: walletPlayer, authStatus, updatePlayer } = useWallet()
   const updateMutation = useUpdatePlayer()
+  const { data: queryPlayer } = usePlayer(authStatus === 'authenticated')
+  const player = queryPlayer ?? walletPlayer
 
   const [pickerOpen, setPickerOpen] = useState(false)
   const [renaming,   setRenaming]   = useState(false)

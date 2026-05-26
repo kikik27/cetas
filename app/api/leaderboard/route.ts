@@ -5,16 +5,23 @@ import { prisma } from '@/src/lib/db'
 import { resolveAuth } from '@/src/lib/api-auth'
 import type { LeaderboardEntryDTO } from '@/src/lib/api-types'
 
-type LeaderboardEntryWithPlayer = {
-  playerId: string
-  score: number
-  wins: number
-  streak: number
-  tier: string
-  player: {
-    name: string
-    avatarIdx: number
-  }
+type PlayerRankRecord = {
+  id: string
+  name: string
+  avatarIdx: number
+  totalPoints: number
+  streakDays: number
+  endlessStage: number
+  rankScore: number
+}
+
+function getTier(score: number): string {
+  if (score >= 100_000) return 'Mythic'
+  if (score >= 50_000) return 'Grandmaster'
+  if (score >= 20_000) return 'Diamond'
+  if (score >= 10_000) return 'Platinum'
+  if (score >= 5_000) return 'Gold'
+  return 'Bronze'
 }
 
 export async function GET(req: NextRequest) {
@@ -24,37 +31,68 @@ export async function GET(req: NextRequest) {
   const auth = await resolveAuth(req)
 
   try {
-    const entries: LeaderboardEntryWithPlayer[] = await prisma.leaderboardEntry.findMany({
-      take:    limit,
-      orderBy: { score: 'desc' },
-      include: { player: { select: { name: true, avatarIdx: true } } },
-    })
+    const players = await prisma.$queryRaw<PlayerRankRecord[]>`
+      SELECT
+        "id",
+        "name",
+        "avatar_idx" AS "avatarIdx",
+        "total_points" AS "totalPoints",
+        "streak_days" AS "streakDays",
+        "endless_stage" AS "endlessStage",
+        ("total_points" + (GREATEST("endless_stage" - 1, 0) * 100)) AS "rankScore"
+      FROM "players"
+      ORDER BY "rankScore" DESC, "streak_days" DESC, "endless_stage" DESC, "created_at" ASC
+      LIMIT ${limit}
+    `
 
-    const leaderboard: LeaderboardEntryDTO[] = entries.map((e: LeaderboardEntryWithPlayer, i: number) => ({
+    const leaderboard: LeaderboardEntryDTO[] = players.map((p: PlayerRankRecord, i: number) => ({
       rank:      i + 1,
-      playerId:  e.playerId,
-      name:      e.player.name,
-      avatarIdx: e.player.avatarIdx,
-      score:     e.score,
-      wins:      e.wins,
-      streak:    e.streak,
-      tier:      e.tier,
+      playerId:  p.id,
+      name:      p.name,
+      avatarIdx: p.avatarIdx,
+      score:     p.totalPoints,
+      wins:      Math.max(0, p.endlessStage - 1),
+      streak:    p.streakDays,
+      tier:      getTier(p.rankScore),
     }))
 
     let myRank: number | null = null
     if (auth) {
-      const myEntry = await prisma.leaderboardEntry.findUnique({
-        where: { playerId: auth.playerId },
+      const me = await prisma.player.findUnique({
+        where: { id: auth.playerId },
+        select: { totalPoints: true, streakDays: true, endlessStage: true, createdAt: true },
       })
-      if (myEntry) {
-        const countAbove = await prisma.leaderboardEntry.count({
-          where: { score: { gt: myEntry.score } },
-        })
-        myRank = countAbove + 1
+      if (me) {
+        const myScore = me.totalPoints + Math.max(0, me.endlessStage - 1) * 100
+        const countRows = await prisma.$queryRaw<{ count: bigint }[]>`
+          SELECT COUNT(*)::bigint AS "count"
+          FROM "players"
+          WHERE
+            ("total_points" + (GREATEST("endless_stage" - 1, 0) * 100)) > ${myScore}
+            OR (
+              ("total_points" + (GREATEST("endless_stage" - 1, 0) * 100)) = ${myScore}
+              AND "streak_days" > ${me.streakDays}
+            )
+            OR (
+              ("total_points" + (GREATEST("endless_stage" - 1, 0) * 100)) = ${myScore}
+              AND "streak_days" = ${me.streakDays}
+              AND "endless_stage" > ${me.endlessStage}
+            )
+            OR (
+              ("total_points" + (GREATEST("endless_stage" - 1, 0) * 100)) = ${myScore}
+              AND "streak_days" = ${me.streakDays}
+              AND "endless_stage" = ${me.endlessStage}
+              AND "created_at" < ${me.createdAt}
+            )
+        `
+        myRank = Number(countRows[0]?.count ?? 0) + 1
       }
     }
 
-    return NextResponse.json({ data: { leaderboard, myRank } })
+    return NextResponse.json(
+      { data: { leaderboard, myRank } },
+      { headers: { 'Cache-Control': 'no-store' } }
+    )
   } catch (err) {
     console.error('[GET /api/leaderboard]', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

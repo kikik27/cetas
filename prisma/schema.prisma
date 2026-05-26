@@ -17,6 +17,8 @@ model Player {
   avatarIdx        Int      @default(1) @map("avatar_idx")
   totalPoints      Int      @default(0) @map("total_points")
   level            Int      @default(1)
+  endlessStage     Int      @default(1) @map("endless_stage")
+  gameProgress     Json?    @map("game_progress")
   streakDays       Int      @default(0) @map("streak_days")
   lastLoginAt      DateTime @default(now()) @map("last_login_at")
   referralCode     String   @unique @map("referral_code")

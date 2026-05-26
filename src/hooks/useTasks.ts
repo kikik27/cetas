@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { TaskWithProgressDTO } from '@/src/lib/api-types'
+import { syncPlayerQuery } from './usePlayer'
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10)
@@ -55,14 +56,14 @@ export function useClaimTask() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: claimTask,
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       qc.setQueryData<TaskWithProgressDTO[]>(
         taskKeys.today(),
         (old) => old?.map(t =>
           t.id === data.taskId ? { ...t, done: true, claimedAt: data.claimedAt } : t
         )
       )
-      qc.invalidateQueries({ queryKey: playerKeys.me })
+      await syncPlayerQuery(qc, { totalPoints: data.totalPoints })
     },
   })
 }
@@ -81,6 +82,3 @@ export function useIncrementTask() {
     },
   })
 }
-
-// Import here to avoid circular dep
-import { playerKeys } from './usePlayer'

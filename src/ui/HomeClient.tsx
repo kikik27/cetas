@@ -2,11 +2,13 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { Lock, Swords, Users } from 'lucide-react'
+import { Coins, HeartPulse, Lock, Swords, Users } from 'lucide-react'
 import PlayerCard   from './home/PlayerCard'
 import DailyChest  from './home/DailyChest'
 import QuestPreview from './home/QuestPreview'
 import BottomNav   from './home/BottomNav'
+import { useWallet } from '@/src/providers/WalletProvider'
+import { usePlayer } from '@/src/hooks/usePlayer'
 
 const LEAVES = [
   { src: '/assets/fx/leaf/1.png', cls: 'leaf l1', w: 18 },
@@ -18,6 +20,13 @@ const LEAVES = [
 ]
 
 export default function HomeClient() {
+  const { authStatus, player: walletPlayer } = useWallet()
+  const { data: queryPlayer } = usePlayer(authStatus === 'authenticated')
+  const player = queryPlayer ?? walletPlayer
+  const progress = player?.gameProgress
+  const endlessStage = progress?.stage ?? player?.endlessStage ?? 1
+  const hasProgress = Boolean(progress) || endlessStage > 1
+
   return (
     <div className="flex h-full flex-col gap-3">
       <PlayerCard />
@@ -52,16 +61,34 @@ export default function HomeClient() {
         <div className="absolute bottom-10 grid w-full grid-cols-2 gap-2 px-1 pb-1">
           <Link
             href="/game"
-            className="flex items-center justify-center gap-1.5 rounded-xl border
+            className="group relative overflow-hidden rounded-xl border
                        border-[var(--border-gold)] bg-[rgba(4,16,33,0.88)]
                        px-3 py-2.5 no-underline backdrop-blur-sm transition-all
                        hover:bg-[rgba(200,146,42,0.18)] hover:border-[var(--gold-hi)]
                        shadow-[0_4px_20px_rgba(0,0,0,0.5)] active:scale-95"
           >
-            <Swords className="h-3.5 w-3.5 text-[var(--gold-mid)]" />
-            <span className="font-display text-[11px] font-bold uppercase tracking-wider text-[var(--gold-hi)]">
-              Endless
-            </span>
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--gold-hi)] to-transparent opacity-70" />
+            <div className="flex items-center justify-center gap-1.5">
+              <Swords className="h-3.5 w-3.5 text-[var(--gold-mid)]" />
+              <span className="font-display text-[11px] font-bold uppercase tracking-wider text-[var(--gold-hi)]">
+                {hasProgress ? 'Continue' : 'Endless'}
+              </span>
+            </div>
+            <div className="mt-1 flex items-center justify-center gap-1.5">
+              <span className="rounded-md border border-[rgba(200,146,42,0.3)] bg-[rgba(200,146,42,0.1)] px-1.5 py-0.5 font-display text-[8px] font-bold uppercase tracking-wider text-[var(--text-1)]">
+                Stage {endlessStage}
+              </span>
+              {progress && (
+                <>
+                  <span className="flex items-center gap-0.5 text-[8px] font-semibold text-[var(--warn)]">
+                    <Coins className="h-2.5 w-2.5" />{progress.gold}
+                  </span>
+                  <span className="flex items-center gap-0.5 text-[8px] font-semibold text-[var(--ok)]">
+                    <HeartPulse className="h-2.5 w-2.5" />{progress.hp}
+                  </span>
+                </>
+              )}
+            </div>
           </Link>
           <div className="flex cursor-not-allowed items-center justify-center gap-1.5 rounded-xl
                           border border-[var(--border)] bg-[rgba(4,16,33,0.88)]

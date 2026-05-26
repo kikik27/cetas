@@ -48,10 +48,13 @@ export const ENEMY_STAR2_PROB  = 0.35     // probability enemy spawns as 2-star
 // ── Economy ───────────────────────────────────────────────────────────────────
 export const REROLL_COST       = 2        // gold cost to reroll shop
 export const SELL_REFUND       = 1        // gold refunded when selling a unit
-export const WIN_GOLD_BONUS    = 3        // extra gold for winning a round
+export const STARTING_GOLD     = 4        // tighter endless-mode opening economy
+export const MAX_GOLD          = 15       // prevents late-game runaway banking
+export const STAGE_INCOME      = 3        // baseline gold gained between stages
+export const WIN_GOLD_BONUS    = 2        // extra gold for winning a stage
 
 // ── Board ─────────────────────────────────────────────────────────────────────
 export const BOARD_COLS        = 8
 export const BOARD_ROWS        = 4
 export const BENCH_SIZE        = 8
-export const MAX_ROUNDS        = 5
+export const INITIAL_STAGE     = 1

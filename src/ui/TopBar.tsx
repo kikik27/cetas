@@ -65,8 +65,8 @@ export default function TopBar({ round, hp, gold, boardUnitCount, maxBoardSlots,
 
       {/* ── Round ── */}
       <div className="flex flex-col items-center rounded-lg border border-[var(--border)] bg-[rgba(4,16,33,0.6)] px-2.5 py-1.5">
-        <span className="text-[8px] font-semibold uppercase tracking-wider text-[var(--text-3)]">Round</span>
-        <span className="font-display text-[13px] font-bold text-[var(--text-1)]">{round}<span className="text-[10px] text-[var(--text-3)]">/5</span></span>
+        <span className="text-[8px] font-semibold uppercase tracking-wider text-[var(--text-3)]">Stage</span>
+        <span className="font-display text-[13px] font-bold text-[var(--text-1)]">{round}</span>
       </div>
 
       {/* ── Slots ── */}
