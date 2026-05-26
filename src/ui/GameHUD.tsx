@@ -29,6 +29,7 @@ export default function GameHUD() {
   const gold          = useGameStore(s => s.gold)
   const phase         = useGameStore(s => s.phase)
   const maxBoardSlots = useGameStore(s => s.maxBoardSlots)
+  const rerollsLeft   = useGameStore(s => s.rerollsLeft)
   const board         = useGameStore(s => s.board)
   const bench         = useGameStore(s => s.bench)
   const shop          = useGameStore(s => s.shop)
@@ -107,7 +108,7 @@ export default function GameHUD() {
         show: true,
         title: 'Victory!',
         titleColor: 'var(--ok)',
-        description: `${result.aliveCount} units survived! +${result.goldEarned} gold. Slot unlocked!`,
+        description: `${result.aliveCount} units survived! +${result.goldEarned} gold.${result.slotsGained ? ' Slot unlocked!' : ''}`,
         buttonLabel: `Stage ${round + 1} ->`,
       })
     } else {
@@ -115,8 +116,8 @@ export default function GameHUD() {
         show: true,
         title: 'Defeat!',
         titleColor: 'var(--warn)',
-        description: `-${result.hpLost} HP. Remaining HP: ${hp}. Slot unlocked!`,
-        buttonLabel: hp <= 0 ? 'Play Again' : `Stage ${round + 1} ->`,
+        description: `-${result.hpLost} HP, +${result.goldEarned} gold. Stage ${round} stays open.`,
+        buttonLabel: hp <= 0 ? 'Play Again' : `Retry Stage ${round}`,
       })
     }
     }
@@ -191,6 +192,7 @@ export default function GameHUD() {
         battleRunning={battleRunning}
         secondsLeft={secondsLeft}
         speedUp={speedUp}
+        rerollsLeft={rerollsLeft}
         onReroll={reroll}
         onSell={sellSelected}
         onBattle={startBattle}

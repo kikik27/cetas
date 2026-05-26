@@ -26,6 +26,7 @@ export interface PlayerGameProgressDTO {
   hp: number
   gold: number
   maxBoardSlots: number
+  rerollsLeft?: number
   board: SavedGameBoardDTO
   bench: SavedGameBenchDTO
 }

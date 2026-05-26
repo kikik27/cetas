@@ -10,6 +10,7 @@ interface ControlsProps {
   battleRunning: boolean
   secondsLeft: number
   speedUp: boolean
+  rerollsLeft: number
   onReroll: () => void
   onSell: () => void
   onBattle: () => void
@@ -18,7 +19,7 @@ interface ControlsProps {
 const BATTLE_SECONDS = BATTLE_LIMIT_MS / 1000
 
 export default function Controls({
-  phase, hasSelected, secondsLeft, speedUp, onReroll, onSell, onBattle,
+  phase, hasSelected, secondsLeft, speedUp, rerollsLeft, onReroll, onSell, onBattle,
 }: ControlsProps) {
 
   /* ── Prep phase ── */
@@ -31,11 +32,12 @@ export default function Controls({
             onClick={onReroll}
             variant="pixelBlue"
             size="md"
+            disabled={rerollsLeft <= 0}
             className="min-h-[44px] flex-1 text-[11px]"
           >
             <Dices className="h-4 w-4" />
             Reroll
-            <span className="ml-0.5 text-[10px] opacity-60">−{REROLL_COST}g</span>
+            <span className="ml-0.5 text-[10px] opacity-60">−{REROLL_COST}g · {rerollsLeft}</span>
           </Button>
 
           {/* Sell — only when unit selected */}
@@ -64,7 +66,7 @@ export default function Controls({
         </div>
 
         <p className="hidden text-center text-[10px] text-[var(--text-3)] min-[380px]:block">
-          Units recall after battle. Sell is permanent.
+          {rerollsLeft} shop refresh{rerollsLeft === 1 ? '' : 'es'} left. Units recall after battle.
         </p>
       </div>
     )

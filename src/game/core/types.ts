@@ -126,6 +126,7 @@ export interface GameState {
   gold: number
   phase: GamePhase
   maxBoardSlots: number
+  rerollsLeft: number
   board: BoardGrid
   bench: BenchSlots
   shop: ShopItem[]

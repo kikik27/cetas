@@ -3,6 +3,7 @@ import { prisma } from '@/src/lib/db'
 import { requireAuth } from '@/src/lib/api-auth'
 import { z } from 'zod'
 import { getZodMessage } from '@/src/lib/validation'
+import { INITIAL_BOARD_SLOTS, REROLLS_PER_STAGE, MAX_BOARD_SLOTS } from '@/src/game/constants'
 
 const savedUnitSchema = z.object({
   id: z.string().min(1).max(64),
@@ -19,7 +20,8 @@ const endlessProgressSchema = z.object({
   stage: z.number().int().min(1).max(10_000),
   hp: z.number().int().min(0).max(100).optional(),
   gold: z.number().int().min(0).max(100).optional(),
-  maxBoardSlots: z.number().int().min(1).max(12).optional(),
+  maxBoardSlots: z.number().int().min(1).max(MAX_BOARD_SLOTS).optional(),
+  rerollsLeft: z.number().int().min(0).max(REROLLS_PER_STAGE).optional(),
   board: savedBoardSchema.optional(),
   bench: savedBenchSchema.optional(),
 }).strict()
@@ -40,7 +42,8 @@ export async function POST(req: NextRequest) {
           stage: parsed.data.stage,
           hp: parsed.data.hp ?? 100,
           gold: parsed.data.gold ?? 0,
-          maxBoardSlots: parsed.data.maxBoardSlots ?? 3,
+          maxBoardSlots: parsed.data.maxBoardSlots ?? INITIAL_BOARD_SLOTS,
+          rerollsLeft: parsed.data.rerollsLeft ?? REROLLS_PER_STAGE,
           board: parsed.data.board,
           bench: parsed.data.bench,
         }
