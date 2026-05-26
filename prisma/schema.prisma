@@ -1,0 +1,137 @@
+// Celo Tactics — Prisma Schema
+// Database: Supabase (PostgreSQL)
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Player ───────────────────────────────────────────────────────────────────
+model Player {
+  id            String   @id @default(cuid())
+  walletAddress String   @unique @map("wallet_address")
+  name          String   @default("Commander")
+  avatarIdx     Int      @default(1) @map("avatar_idx")
+  totalPoints   Int      @default(0) @map("total_points")
+  level         Int      @default(1)
+  streakDays    Int      @default(0) @map("streak_days")
+  lastLoginAt   DateTime @default(now()) @map("last_login_at")
+  referralCode  String   @unique @map("referral_code")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  taskProgress  TaskProgress[]
+  dailyClaims   DailyClaim[]
+  referralsMade Referral[]     @relation("referrer")
+  referredBy    Referral?      @relation("referred")
+  matchEntries  MatchEntry[]
+  leaderboard   LeaderboardEntry?
+
+  @@map("players")
+}
+
+// ─── Daily Tasks ──────────────────────────────────────────────────────────────
+model TaskDefinition {
+  id       String @id  // e.g. "play1", "win1"
+  label    String
+  desc     String
+  reward   Int
+  total    Int         // target count
+  iconId   String      @map("icon_id")
+  sortOrder Int        @default(0) @map("sort_order")
+  active   Boolean     @default(true)
+
+  progress TaskProgress[]
+
+  @@map("task_definitions")
+}
+
+model TaskProgress {
+  id         String   @id @default(cuid())
+  playerId   String   @map("player_id")
+  taskId     String   @map("task_id")
+  date       String                        // "YYYY-MM-DD" — resets daily
+  progress   Int      @default(0)
+  done       Boolean  @default(false)
+  claimedAt  DateTime? @map("claimed_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  player     Player         @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  task       TaskDefinition @relation(fields: [taskId], references: [id])
+
+  @@unique([playerId, taskId, date])
+  @@map("task_progress")
+}
+
+// ─── Daily Chest ──────────────────────────────────────────────────────────────
+model DailyClaim {
+  id         String   @id @default(cuid())
+  playerId   String   @map("player_id")
+  date       String                        // "YYYY-MM-DD"
+  rewardType String   @map("reward_type")  // "gold" | "xp" | "shard"
+  amount     Int
+  label      String
+  claimedAt  DateTime @default(now()) @map("claimed_at")
+
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, date])
+  @@map("daily_claims")
+}
+
+// ─── Friends & Referrals ──────────────────────────────────────────────────────
+model Referral {
+  id           String   @id @default(cuid())
+  referrerId   String   @map("referrer_id")
+  referredId   String   @unique @map("referred_id")
+  code         String
+  rewarded     Boolean  @default(false)
+  rewardedAt   DateTime? @map("rewarded_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  referrer     Player   @relation("referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referred     Player   @relation("referred", fields: [referredId], references: [id], onDelete: Cascade)
+
+  @@map("referrals")
+}
+
+// ─── Leaderboard ─────────────────────────────────────────────────────────────
+model LeaderboardEntry {
+  id          String   @id @default(cuid())
+  playerId    String   @unique @map("player_id")
+  score       Int      @default(0)
+  wins        Int      @default(0)
+  losses      Int      @default(0)
+  streak      Int      @default(0)
+  bestStreak  Int      @default(0) @map("best_streak")
+  tier        String   @default("Bronze")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@map("leaderboard_entries")
+}
+
+// ─── Match Entries (on-chain mirror) ─────────────────────────────────────────
+model MatchEntry {
+  id          String   @id @default(cuid())
+  matchId     Int      @map("match_id")   // on-chain match ID
+  playerId    String   @map("player_id")
+  rank        Int?
+  entryFee    String   @map("entry_fee")  // stored as string (wei)
+  prizeWon    String?  @map("prize_won")
+  txHash      String?  @map("tx_hash")
+  settledAt   DateTime? @map("settled_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, playerId])
+  @@map("match_entries")
+}
