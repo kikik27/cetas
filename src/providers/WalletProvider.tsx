@@ -61,27 +61,34 @@ const WalletContext = createContext<WalletContextValue>({
 function WalletContextBridge({ children }: { children: React.ReactNode }) {
   const { address, isConnected, isConnecting } = useConnection()
   const { error: connectError, isPending }     = useAutoConnect()
-  const [isMiniPay, setIsMiniPay]              = useState(false)
+  const [isMiniPay, setIsMiniPay]              = useState(() => isMiniPayEnvironment())
 
   // Dev fallback: stable mock address when no MiniPay available
   const [devWallet, setDevWallet] = useState<string | null>(null)
 
   useEffect(() => {
-    setIsMiniPay(isMiniPayEnvironment())
+    const detectMiniPay = async () => {
+      setIsMiniPay(isMiniPayEnvironment())
+    }
+    void detectMiniPay()
   }, [])
 
   useEffect(() => {
     if (process.env.NODE_ENV !== 'development') return
     if (address) return
 
-    const stored = localStorage.getItem('cetas_dev_wallet')
-    if (stored) { setDevWallet(stored); return }
+    const loadDevWallet = async () => {
+      const stored = localStorage.getItem('cetas_dev_wallet')
+      if (stored) { setDevWallet(stored); return }
 
-    const mock = '0x' + Array.from({ length: 40 }, () =>
-      Math.floor(Math.random() * 16).toString(16)
-    ).join('')
-    localStorage.setItem('cetas_dev_wallet', mock)
-    setDevWallet(mock)
+      const mock = '0x' + Array.from({ length: 40 }, () =>
+        Math.floor(Math.random() * 16).toString(16)
+      ).join('')
+      localStorage.setItem('cetas_dev_wallet', mock)
+      setDevWallet(mock)
+    }
+
+    void loadDevWallet()
   }, [address])
 
   const effectiveWallet   = address?.toLowerCase() ?? devWallet ?? null

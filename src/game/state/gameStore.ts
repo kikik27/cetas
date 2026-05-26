@@ -1,14 +1,13 @@
 'use client'
 
 import { create } from 'zustand'
-import type { GameState, SelectedSource, ShopItem } from '../core/types'
+import type { GameState, SelectedSource } from '../core/types'
 import { emptyBoard, getBoardUnitCount, placeOnBoard, placeOnBench } from '../systems/boardSystem'
 import { generateShop, checkMerge, buyUnit as buyUnitFn } from '../systems/shopSystem'
 import { generateEnemies, runBattleStep, evaluateBattleEnd, generateEnemyPreview } from '../systems/combatSystem'
 import {
   BATTLE_LIMIT_MS,
   SPEED_UP_FACTOR,
-  BATTLE_TICK_CAP,
   MAX_ROUNDS,
   REROLL_COST,
 } from '../constants'

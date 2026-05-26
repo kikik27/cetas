@@ -92,8 +92,7 @@ export function useAuth(wallet: string | null) {
         setState(s => ({ ...s, status: 'unauthenticated' }))
       }
     })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [qc])
 
   // ── Step 2: Login when wallet address becomes available ───────────────────
   useEffect(() => {
@@ -104,10 +103,11 @@ export function useAuth(wallet: string | null) {
     if (state.status === 'restoring') return
 
     authedWalletRef.current = wallet
-    setState(s => ({ ...s, status: 'logging-in', error: null }))
 
-    login(wallet)
-      .then(data => {
+    const runLogin = async () => {
+      setState(s => ({ ...s, status: 'logging-in', error: null }))
+      try {
+        const data = await login(wallet)
         setState({
           status:      'authenticated',
           player:      data.player,
@@ -118,13 +118,14 @@ export function useAuth(wallet: string | null) {
           qc.setQueryData(['player', data.player.walletAddress], data.player)
           qc.setQueryData(['player', 'me'], data.player)
         }
-      })
-      .catch(err => {
+      } catch (err) {
         authedWalletRef.current = null
         setState({ status: 'error', player: null, isNewPlayer: false, error: String(err) })
-      })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wallet, state.status])
+      }
+    }
+
+    void runLogin()
+  }, [wallet, state.status, qc])
 
   // ── Logout ────────────────────────────────────────────────────────────────
   const signOut = useCallback(async () => {

@@ -5,7 +5,7 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/src/lib/session'
 import { prisma } from '@/src/lib/db'
-import type { PlayerDTO } from '@/src/lib/api-types'
+import { toPlayerDTO } from '@/src/lib/player-dto'
 
 export async function GET() {
   try {
@@ -21,20 +21,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Player not found' }, { status: 404 })
     }
 
-    const dto: PlayerDTO = {
-      id:              player.id,
-      walletAddress:   player.walletAddress,
-      name:            player.name,
-      avatarIdx:       player.avatarIdx,
-      totalPoints:     player.totalPoints,
-      level:           player.level,
-      streakDays:      player.streakDays,
-      referralCode:    player.referralCode,
-      lastLoginAt:     player.lastLoginAt.toISOString(),
-      nameChangesLeft: player.nameChangesLeft,
-    }
-
-    return NextResponse.json({ data: dto })
+    return NextResponse.json({ data: toPlayerDTO(player) })
   } catch (err) {
     console.error('[GET /api/auth/me]', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

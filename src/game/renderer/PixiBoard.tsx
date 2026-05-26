@@ -85,12 +85,14 @@ export default function PixiBoard({
   const speedUpRef     = useRef(speedUp)
   const projectilesRef = useRef(projectiles)
 
-  boardRef.current       = board
-  phaseRef.current       = phase
-  selectedRef.current    = selected
-  maxSlotsRef.current    = maxBoardSlots
-  speedUpRef.current     = speedUp
-  projectilesRef.current = projectiles
+  useEffect(() => {
+    boardRef.current       = board
+    phaseRef.current       = phase
+    selectedRef.current    = selected
+    maxSlotsRef.current    = maxBoardSlots
+    speedUpRef.current     = speedUp
+    projectilesRef.current = projectiles
+  }, [board, phase, selected, maxBoardSlots, speedUp, projectiles])
 
   useEffect(() => { preloadAllGameImages() }, [])
 

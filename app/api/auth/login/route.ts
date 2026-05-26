@@ -16,6 +16,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/src/lib/db'
 import { signSession, setSessionCookie } from '@/src/lib/session'
 import { loginBodySchema, getZodMessage } from '@/src/lib/validation'
+import { toPlayerDTO } from '@/src/lib/player-dto'
 import type { LoginResponseDTO } from '@/src/lib/api-types'
 
 function todayKey(): string {
@@ -63,20 +64,7 @@ export async function POST(req: NextRequest) {
     const dto: LoginResponseDTO = {
       walletAddress: wallet,
       isNewPlayer,
-      player: player
-        ? {
-            id:              player.id,
-            walletAddress:   player.walletAddress,
-            name:            player.name,
-            avatarIdx:       player.avatarIdx,
-            totalPoints:     player.totalPoints,
-            level:           player.level,
-            streakDays:      player.streakDays,
-            referralCode:    player.referralCode,
-            lastLoginAt:     player.lastLoginAt.toISOString(),
-            nameChangesLeft: player.nameChangesLeft,
-          }
-        : null,
+      player: player ? toPlayerDTO(player) : null,
     }
 
     const res = NextResponse.json({ data: dto })

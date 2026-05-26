@@ -31,15 +31,22 @@ export default function LandingGate({ className }: { className?: string }) {
   // Auto-open onboarding for new players
   useEffect(() => {
     if (authStatus === 'authenticated' && isNewPlayer && !open) {
-      setStep('name')
-      setOpen(true)
+      const openOnboarding = async () => {
+        setStep('name')
+        setOpen(true)
+      }
+      void openOnboarding()
     }
   }, [authStatus, isNewPlayer, open])
 
   function handlePlay() {
     if (connecting) return
     if (authStatus === 'authenticated') {
-      isNewPlayer ? setOpen(true) : router.push('/home')
+      if (isNewPlayer) {
+        setOpen(true)
+      } else {
+        router.push('/home')
+      }
       return
     }
     if (!isMiniPay && process.env.NODE_ENV === 'production') return

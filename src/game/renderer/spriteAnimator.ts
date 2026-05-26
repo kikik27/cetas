@@ -56,7 +56,6 @@ export function tickAnimator(
 export function transitionAnim(
   state: AnimatorState,
   next: AnimState,
-  clip: AnimClip,
 ): AnimatorState {
   if (state.currentAnim === next && !state.done) return state
   return { currentAnim: next, frame: 0, elapsed: 0, done: false }

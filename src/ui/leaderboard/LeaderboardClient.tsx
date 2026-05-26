@@ -1,9 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import Link from 'next/link'
 import { Trophy, Swords, Shield, Flame, Medal, Star } from 'lucide-react'
-import { Button } from '@/src/components/ui/Button'
 import { useLeaderboard } from '@/src/hooks/useLeaderboard'
 import { useWallet } from '@/src/providers/WalletProvider'
 import BottomNav from '@/src/ui/home/BottomNav'

@@ -16,12 +16,15 @@ export default function LandingClient() {
   const [musicEnabled, setMusicEnabled] = useState(false)
 
   useEffect(() => {
-    // Play main track if already enabled (returning from game page)
-    if (audioManager.enabled) {
+    const syncMusic = async () => {
+      if (!audioManager.enabled) return
       audioManager.play('main')
       setMusicEnabled(true)
-      return
     }
+
+    void syncMusic()
+    if (audioManager.enabled) return
+
     const t = setTimeout(() => setShowModal(true), MODAL_DELAY_MS)
     return () => clearTimeout(t)
   }, [])

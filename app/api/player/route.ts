@@ -11,32 +11,12 @@ import { prisma } from '@/src/lib/db'
 import { requireAuth } from '@/src/lib/api-auth'
 import { getSessionFromRequest, setSessionCookie, signSession } from '@/src/lib/session'
 import { updatePlayerBodySchema, getZodMessage } from '@/src/lib/validation'
-import type { PlayerDTO } from '@/src/lib/api-types'
+import { toPlayerDTO } from '@/src/lib/player-dto'
+import { generateReferralCode } from '@/src/lib/referral-code'
+import { isUniqueConstraintError } from '@/src/lib/prisma-errors'
 
 const DEFAULT_NAME = 'Commander'
-
-function generateReferralCode(): string {
-  return Math.random().toString(36).slice(2, 8).toUpperCase()
-}
-
-function toDTO(p: {
-  id: string; walletAddress: string; name: string; avatarIdx: number
-  totalPoints: number; level: number; streakDays: number
-  referralCode: string; lastLoginAt: Date; nameChangesLeft: number
-}): PlayerDTO {
-  return {
-    id:              p.id,
-    walletAddress:   p.walletAddress,
-    name:            p.name,
-    avatarIdx:       p.avatarIdx,
-    totalPoints:     p.totalPoints,
-    level:           p.level,
-    streakDays:      p.streakDays,
-    referralCode:    p.referralCode,
-    lastLoginAt:     p.lastLoginAt.toISOString(),
-    nameChangesLeft: p.nameChangesLeft,
-  }
-}
+const REFERRAL_CODE_RETRIES = 5
 
 export async function GET(req: NextRequest) {
   const { auth, error } = await requireAuth(req)
@@ -45,7 +25,7 @@ export async function GET(req: NextRequest) {
   try {
     const player = await prisma.player.findUnique({ where: { id: auth.playerId } })
     if (!player) return NextResponse.json({ error: 'Player not found' }, { status: 404 })
-    return NextResponse.json({ data: toDTO(player) })
+    return NextResponse.json({ data: toPlayerDTO(player) })
   } catch (err) {
     console.error('[GET /api/player]', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -111,15 +91,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (!current) {
-      const player = await prisma.player.create({
-        data: {
-          walletAddress:    session.walletAddress,
-          name:             name!,
-          avatarIdx:        avatarIdx ?? 1,
-          referralCode:     generateReferralCode(),
-          lastLoginAt:      new Date(),
-          nameChangesLeft:  1,
-        },
+      const player = await createPlayerProfile({
+        walletAddress: session.walletAddress,
+        name:          name!,
+        avatarIdx:     avatarIdx ?? 1,
       })
 
       const token = await signSession({
@@ -127,7 +102,7 @@ export async function POST(req: NextRequest) {
         walletAddress: player.walletAddress,
       })
 
-      const res = NextResponse.json({ data: toDTO(player) })
+      const res = NextResponse.json({ data: toPlayerDTO(player) })
       setSessionCookie(res, token)
       return res
     }
@@ -143,9 +118,44 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    return NextResponse.json({ data: toDTO(player) })
+    return NextResponse.json({ data: toPlayerDTO(player) })
   } catch (err) {
+    if (isUniqueConstraintError(err)) {
+      return NextResponse.json(
+        { error: 'Name is already taken. Please choose another.' },
+        { status: 409 }
+      )
+    }
+
     console.error('[POST /api/player]', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
+}
+
+async function createPlayerProfile(input: {
+  walletAddress: string
+  name: string
+  avatarIdx: number
+}) {
+  let lastError: unknown
+
+  for (let attempt = 0; attempt < REFERRAL_CODE_RETRIES; attempt++) {
+    try {
+      return await prisma.player.create({
+        data: {
+          walletAddress:    input.walletAddress,
+          name:             input.name,
+          avatarIdx:        input.avatarIdx,
+          referralCode:     generateReferralCode(),
+          lastLoginAt:      new Date(),
+          nameChangesLeft:  1,
+        },
+      })
+    } catch (err) {
+      lastError = err
+      if (!isUniqueConstraintError(err)) throw err
+    }
+  }
+
+  throw lastError
 }

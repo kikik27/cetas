@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { playerNameSchema, getZodMessage } from '@/src/lib/validation'
 
 export type NameStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid'
@@ -8,6 +8,10 @@ export type NameStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid'
 export interface CheckNameResult {
   status:  NameStatus
   message: string
+}
+
+interface AsyncNameCheck extends CheckNameResult {
+  name: string
 }
 
 /**
@@ -23,34 +27,19 @@ export function useCheckName(
   debounceMs = 400,
   skip = false,
 ): CheckNameResult {
-  const [result, setResult] = useState<CheckNameResult>({ status: 'idle', message: '' })
-  const abortRef = useRef<AbortController | null>(null)
+  const [result, setResult] = useState<AsyncNameCheck>({ name: '', status: 'idle', message: '' })
+  const trimmed = name.trim()
+  const validation = useMemo(() => playerNameSchema.safeParse(trimmed), [trimmed])
 
   useEffect(() => {
-    const trimmed = name.trim()
+    if (!trimmed || skip || !validation.success) return
 
-    if (!trimmed || skip) {
-      setResult({ status: 'idle', message: '' })
-      return
-    }
-
-    // Client-side Zod validation first (instant, no network)
-    const zodResult = playerNameSchema.safeParse(trimmed)
-    if (!zodResult.success) {
-      setResult({ status: 'invalid', message: getZodMessage(zodResult.error) })
-      return
-    }
-
-    setResult({ status: 'checking', message: '' })
-
+    const controller = new AbortController()
     const timer = setTimeout(async () => {
-      abortRef.current?.abort()
-      abortRef.current = new AbortController()
-
       try {
         const res = await fetch(
           `/api/player/check-name?name=${encodeURIComponent(trimmed)}`,
-          { signal: abortRef.current.signal }
+          { signal: controller.signal }
         )
         const json = await res.json() as {
           data?: { available: boolean; name: string; reason?: string }
@@ -58,25 +47,33 @@ export function useCheckName(
         }
 
         if (json.data?.available) {
-          setResult({ status: 'available', message: 'Name is available' })
+          setResult({ name: trimmed, status: 'available', message: 'Name is available' })
         } else {
           setResult({
+            name:    trimmed,
             status:  'taken',
             message: json.data?.reason ?? 'Name is already taken',
           })
         }
       } catch (err) {
         if ((err as Error).name !== 'AbortError') {
-          setResult({ status: 'idle', message: '' })
+          setResult({ name: trimmed, status: 'idle', message: '' })
         }
       }
     }, debounceMs)
 
     return () => {
       clearTimeout(timer)
-      abortRef.current?.abort()
+      controller.abort()
     }
-  }, [name, debounceMs, skip])
+  }, [trimmed, debounceMs, skip, validation])
 
-  return result
+  if (!trimmed || skip) return { status: 'idle', message: '' }
+  if (!validation.success) {
+    return { status: 'invalid', message: getZodMessage(validation.error) }
+  }
+  if (result.name === trimmed && (result.status === 'available' || result.status === 'taken')) {
+    return { status: result.status, message: result.message }
+  }
+  return { status: 'checking', message: '' }
 }

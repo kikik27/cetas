@@ -108,6 +108,9 @@ CREATE UNIQUE INDEX "players_wallet_address_key" ON "players"("wallet_address");
 CREATE UNIQUE INDEX "players_name_key" ON "players"("name");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "players_name_lower_key" ON "players"(LOWER("name"));
+
+-- CreateIndex
 CREATE UNIQUE INDEX "players_referral_code_key" ON "players"("referral_code");
 
 -- CreateIndex

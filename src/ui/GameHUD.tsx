@@ -73,6 +73,7 @@ export default function GameHUD() {
   useEffect(() => {
     if (phase !== 'battle' || battleRunning) return
     const result = evaluateBattleEnd(board, round)
+    const showResultModal = async () => {
     if (hp <= 0) {
       setModal({
         show: true,
@@ -98,8 +99,9 @@ export default function GameHUD() {
         buttonLabel: round >= MAX_ROUNDS ? 'Play Again' : `Round ${round + 1} →`,
       })
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [battleRunning, phase])
+    }
+    void showResultModal()
+  }, [battleRunning, board, hp, phase, round])
 
   const boardCount = getBoardUnitCount(board)
   const isPrep = phase === PHASE.PREP
