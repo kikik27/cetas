@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { FriendDTO } from '@/src/lib/api-types'
-import { playerKeys } from './usePlayer'
+import { syncPlayerQuery } from './usePlayer'
 
 export const friendKeys = {
   list: () => ['friends'] as const,
@@ -52,11 +52,11 @@ export function useClaimReferralReward() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: claimReferralReward,
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       qc.setQueryData<FriendDTO[]>(friendKeys.list(), (old) =>
         old?.map(f => f.id === data.friendId ? { ...f, rewarded: true } : f)
       )
-      qc.invalidateQueries({ queryKey: playerKeys.me })
+      await syncPlayerQuery(qc, { totalPoints: data.totalPoints })
     },
   })
 }
@@ -65,8 +65,8 @@ export function useSubmitReferralCode() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: submitReferralCode,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: playerKeys.me })
+    onSuccess: async (data) => {
+      await syncPlayerQuery(qc, { totalPoints: data.totalPoints })
     },
   })
 }

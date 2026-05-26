@@ -13,7 +13,8 @@ export default function QuestPreview() {
   const { data: tasks = [] } = useTasks(isReady)
 
   const completedCount = tasks.filter(t => t.done).length
-  const total          = tasks.length || 6  // fallback count while loading
+  const hasTasks       = tasks.length > 0
+  const total          = hasTasks ? tasks.length : 0
   const allDone        = tasks.length > 0 && completedCount === tasks.length
 
   return (
@@ -38,7 +39,7 @@ export default function QuestPreview() {
           Daily Quests
         </p>
         <div className="mt-0.5 flex items-center gap-1">
-          {tasks.length > 0
+          {hasTasks
             ? tasks.map(t => (
                 <span
                   key={t.id}
@@ -48,13 +49,13 @@ export default function QuestPreview() {
                   )}
                 />
               ))
-            : Array.from({ length: 6 }).map((_, i) => (
-                <span key={i} className="h-1 w-1 rounded-full bg-[rgba(11,78,162,0.3)]" />
-              ))
+            : <span className="text-[9px] text-[var(--text-dim)]">No quests yet</span>
           }
-          <span className="ml-1 text-[9px] text-[var(--text-3)]">
-            {completedCount}/{total}
-          </span>
+          {hasTasks && (
+            <span className="ml-1 text-[9px] text-[var(--text-3)]">
+              {completedCount}/{total}
+            </span>
+          )}
         </div>
       </div>
 

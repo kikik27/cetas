@@ -1,6 +1,7 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import type { QueryClient } from '@tanstack/react-query'
 import type { PlayerDTO } from '@/src/lib/api-types'
 
 export const playerKeys = {
@@ -44,4 +45,18 @@ export function useUpdatePlayer() {
       qc.setQueryData(playerKeys.me, data)
     },
   })
+}
+
+export async function syncPlayerQuery(
+  qc: QueryClient,
+  patch?: Partial<PlayerDTO>,
+): Promise<void> {
+  if (patch) {
+    qc.setQueryData<PlayerDTO>(playerKeys.me, (current) =>
+      current ? { ...current, ...patch } : current
+    )
+  }
+
+  await qc.invalidateQueries({ queryKey: playerKeys.me })
+  await qc.refetchQueries({ queryKey: playerKeys.me, type: 'active' })
 }

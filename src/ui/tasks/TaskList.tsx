@@ -40,24 +40,32 @@ export default function TaskList() {
         />
       </div>
 
-      {tasks.map(task => (
-        <TaskItem
-          key={task.id}
-          def={{
-            id:       task.id,
-            label:    task.label,
-            desc:     task.desc,
-            reward:   task.reward,
-            total:    task.total,
-            iconId:   task.iconId as import('@/src/lib/homeStore').TaskIconId,
-          }}
-          progress={task.progress}
-          done={task.done}
-          claimedAt={task.claimedAt}
-          onClaim={() => claimMutation.mutate(task.id)}
-          claiming={claimMutation.isPending && claimMutation.variables === task.id}
-        />
-      ))}
+      {tasks.length === 0 ? (
+        <div className="relic-frame flex flex-col items-center gap-2 py-8 text-center">
+          <CheckSquare className="h-8 w-8 text-[var(--text-dim)]" />
+          <p className="font-display text-[12px] text-[var(--text-3)]">No quests yet</p>
+          <p className="text-[10px] text-[var(--text-dim)]">Daily quests will appear after setup</p>
+        </div>
+      ) : (
+        tasks.map(task => (
+          <TaskItem
+            key={task.id}
+            def={{
+              id:       task.id,
+              label:    task.label,
+              desc:     task.desc,
+              reward:   task.reward,
+              total:    task.total,
+              iconId:   task.iconId as import('@/src/lib/homeStore').TaskIconId,
+            }}
+            progress={task.progress}
+            done={task.done}
+            claimedAt={task.claimedAt}
+            onClaim={() => claimMutation.mutate(task.id)}
+            claiming={claimMutation.isPending && claimMutation.variables === task.id}
+          />
+        ))
+      )}
     </div>
   )
 }

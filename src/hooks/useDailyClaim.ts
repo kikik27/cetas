@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { DailyClaimStatusDTO } from '@/src/lib/api-types'
-import { playerKeys } from './usePlayer'
+import { syncPlayerQuery } from './usePlayer'
 
 export const dailyClaimKeys = {
   status: () => ['daily-claim'] as const,
@@ -43,7 +43,7 @@ export function useOpenChest() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: openDailyChest,
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       qc.setQueryData<DailyClaimStatusDTO>(dailyClaimKeys.status(), {
         claimed: true,
         reward: {
@@ -54,7 +54,7 @@ export function useOpenChest() {
           claimedAt:  data.claimedAt,
         },
       })
-      qc.invalidateQueries({ queryKey: playerKeys.me })
+      await syncPlayerQuery(qc, { totalPoints: data.totalPoints })
     },
   })
 }
