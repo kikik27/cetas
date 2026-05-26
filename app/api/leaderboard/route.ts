@@ -5,16 +5,22 @@ import { prisma } from '@/src/lib/db'
 import { resolveAuth } from '@/src/lib/api-auth'
 import type { LeaderboardEntryDTO } from '@/src/lib/api-types'
 
-type LeaderboardEntryWithPlayer = {
-  playerId: string
-  score: number
-  wins: number
-  streak: number
-  tier: string
-  player: {
-    name: string
-    avatarIdx: number
-  }
+type PlayerRankRecord = {
+  id: string
+  name: string
+  avatarIdx: number
+  totalPoints: number
+  streakDays: number
+  endlessStage: number
+}
+
+function getTier(score: number): string {
+  if (score >= 100_000) return 'Mythic'
+  if (score >= 50_000) return 'Grandmaster'
+  if (score >= 20_000) return 'Diamond'
+  if (score >= 10_000) return 'Platinum'
+  if (score >= 5_000) return 'Gold'
+  return 'Bronze'
 }
 
 export async function GET(req: NextRequest) {
@@ -24,31 +30,63 @@ export async function GET(req: NextRequest) {
   const auth = await resolveAuth(req)
 
   try {
-    const entries: LeaderboardEntryWithPlayer[] = await prisma.leaderboardEntry.findMany({
+    const players: PlayerRankRecord[] = await prisma.player.findMany({
       take:    limit,
-      orderBy: { score: 'desc' },
-      include: { player: { select: { name: true, avatarIdx: true } } },
+      orderBy: [
+        { totalPoints: 'desc' },
+        { streakDays: 'desc' },
+        { endlessStage: 'desc' },
+        { createdAt: 'asc' },
+      ],
+      select: {
+        id: true,
+        name: true,
+        avatarIdx: true,
+        totalPoints: true,
+        streakDays: true,
+        endlessStage: true,
+      },
     })
 
-    const leaderboard: LeaderboardEntryDTO[] = entries.map((e: LeaderboardEntryWithPlayer, i: number) => ({
+    const leaderboard: LeaderboardEntryDTO[] = players.map((p: PlayerRankRecord, i: number) => ({
       rank:      i + 1,
-      playerId:  e.playerId,
-      name:      e.player.name,
-      avatarIdx: e.player.avatarIdx,
-      score:     e.score,
-      wins:      e.wins,
-      streak:    e.streak,
-      tier:      e.tier,
+      playerId:  p.id,
+      name:      p.name,
+      avatarIdx: p.avatarIdx,
+      score:     p.totalPoints,
+      wins:      Math.max(0, p.endlessStage - 1),
+      streak:    p.streakDays,
+      tier:      getTier(p.totalPoints),
     }))
 
     let myRank: number | null = null
     if (auth) {
-      const myEntry = await prisma.leaderboardEntry.findUnique({
-        where: { playerId: auth.playerId },
+      const me = await prisma.player.findUnique({
+        where: { id: auth.playerId },
+        select: { totalPoints: true, streakDays: true, endlessStage: true, createdAt: true },
       })
-      if (myEntry) {
-        const countAbove = await prisma.leaderboardEntry.count({
-          where: { score: { gt: myEntry.score } },
+      if (me) {
+        const countAbove = await prisma.player.count({
+          where: {
+            OR: [
+              { totalPoints: { gt: me.totalPoints } },
+              {
+                totalPoints: me.totalPoints,
+                streakDays: { gt: me.streakDays },
+              },
+              {
+                totalPoints: me.totalPoints,
+                streakDays: me.streakDays,
+                endlessStage: { gt: me.endlessStage },
+              },
+              {
+                totalPoints: me.totalPoints,
+                streakDays: me.streakDays,
+                endlessStage: me.endlessStage,
+                createdAt: { lt: me.createdAt },
+              },
+            ],
+          },
         })
         myRank = countAbove + 1
       }
