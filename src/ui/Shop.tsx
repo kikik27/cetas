@@ -2,8 +2,7 @@
 
 import Image from 'next/image'
 import { cn } from '@/src/lib/utils'
-import { UI } from '@/src/lib/assetPaths'
-import AvatarImage from '@/src/components/ui/AvatarImage'
+import { avatarSrc, UI } from '@/src/lib/assetPaths'
 import type { ShopItem } from '../game/core/types'
 
 const TRAIT_COLORS: Record<string, { text: string; bg: string; border: string }> = {
@@ -20,7 +19,7 @@ interface ShopProps {
 
 export default function Shop({ shop, onBuy }: ShopProps) {
   return (
-    <div className="relic-frame rounded-xl px-2.5 py-1.5">
+    <div className="relic-frame flex h-full flex-col rounded-xl px-2.5 py-1.5">
       {/* Header */}
       <div className="mb-1 flex items-center justify-between">
         <span className="label">Recruit Shop</span>
@@ -30,7 +29,7 @@ export default function Shop({ shop, onBuy }: ShopProps) {
       <div className="divider-gold mb-1" />
 
       {/* Cards */}
-      <div className="scroll-x flex gap-1.5 pb-0">
+      <div className="scroll-x flex min-h-0 flex-1 gap-1.5 pb-0">
         {shop.map((item, i) => (
           <ShopCard key={i} item={item} onBuy={() => onBuy(i)} />
         ))}
@@ -47,7 +46,7 @@ function ShopCard({ item, onBuy }: { item: ShopItem; onBuy: () => void }) {
       onClick={item.sold ? undefined : onBuy}
       disabled={item.sold}
       className={cn(
-        'relative flex h-[54px] w-[56px] flex-shrink-0 flex-col items-center justify-end gap-0.5 overflow-hidden rounded-xl px-1 pb-1.5 pt-2 transition-all duration-150 min-[390px]:w-[60px]',
+        'game-shop-card relative flex w-[66px] flex-shrink-0 flex-col items-center justify-end gap-1 overflow-hidden rounded-xl px-1.5 pb-1.5 pt-2 transition-all duration-150 min-[390px]:w-[70px]',
         item.sold
           ? 'cursor-default border border-[rgba(255,255,255,0.05)] bg-[rgba(4,16,33,0.5)] opacity-30'
           : [
@@ -66,15 +65,30 @@ function ShopCard({ item, onBuy }: { item: ShopItem; onBuy: () => void }) {
 
       {/* Avatar */}
       <div className={cn(
-        'h-7 w-7 overflow-hidden rounded-lg border bg-[rgba(0,0,0,0.4)]',
+        'game-shop-avatar overflow-hidden rounded-lg border bg-[rgba(0,0,0,0.4)] p-0.5',
         item.sold ? 'border-[rgba(255,255,255,0.06)]' : 'border-[rgba(200,146,42,0.35)]'
       )}>
-        <AvatarImage idx={item.avatarIndex} size={28} />
+        <Image
+          src={avatarSrc(item.avatarIndex)}
+          alt=""
+          aria-hidden
+          width={40}
+          height={40}
+          unoptimized
+          className="pixel h-full w-full object-contain"
+        />
       </div>
 
       {/* Name */}
-      <span className="max-w-full truncate text-center text-[7px] font-bold leading-none text-[var(--text-1)]">
+      <span className="max-w-full whitespace-normal break-words text-center text-[8px] font-bold leading-[9px] text-[var(--text-1)]">
         {item.name}
+      </span>
+
+      <span
+        className="game-card-chip max-w-full rounded-full px-1 py-[1px] text-[6px] font-bold leading-none"
+        style={{ background: tc.bg, color: tc.text, border: `1px solid ${tc.border}` }}
+      >
+        {item.traitLabel}
       </span>
 
       <span className="absolute inset-x-1 bottom-0 h-0.5 rounded-full" style={{ background: tc.text }} />

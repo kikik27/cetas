@@ -31,7 +31,7 @@ export default function EnemyIntel({ enemies, round }: EnemyIntelProps) {
   const threat   = getThreat(totalAtk)
 
   return (
-    <div className="relic-frame anim-fade rounded-xl px-2.5 py-1.5">
+    <div className="relic-frame anim-fade flex h-full flex-col rounded-xl px-2.5 py-1.5">
       {/* Header */}
       <div className="mb-1 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -50,7 +50,7 @@ export default function EnemyIntel({ enemies, round }: EnemyIntelProps) {
       <div className="divider-gold mb-1" />
 
       {/* Cards */}
-      <div className="scroll-x flex gap-1.5 pb-0">
+      <div className="scroll-x flex min-h-0 flex-1 gap-1.5 pb-0">
         {enemies.map((e, i) => <EnemyCard key={i} enemy={e} />)}
       </div>
     </div>
@@ -63,7 +63,7 @@ function EnemyCard({ enemy }: { enemy: EnemyPreview }) {
   return (
     <div
       className={cn(
-        'relative flex h-[54px] w-[106px] flex-shrink-0 items-center gap-1.5 overflow-hidden rounded-xl px-1.5 pb-2 pt-1.5 min-[390px]:w-[112px]',
+        'game-intel-card relative flex w-[116px] flex-shrink-0 items-center gap-2 overflow-hidden rounded-xl px-2 pb-2 pt-1.5 min-[390px]:w-[124px]',
         'border border-[rgba(224,48,48,0.2)] bg-[rgba(224,48,48,0.04)]',
         'transition-colors hover:border-[rgba(224,48,48,0.35)] hover:bg-[rgba(224,48,48,0.08)]'
       )}
@@ -71,7 +71,7 @@ function EnemyCard({ enemy }: { enemy: EnemyPreview }) {
       aria-label={`${enemy.name}, ${enemy.traitLabel}, attack and health hidden`}
     >
       {/* Avatar */}
-      <div className="relative h-8 w-8 flex-shrink-0 rounded-lg border border-[rgba(224,48,48,0.35)] bg-[rgba(0,0,0,0.4)] p-0.5">
+      <div className="game-intel-avatar relative flex-shrink-0 rounded-lg border border-[rgba(224,48,48,0.35)] bg-[rgba(0,0,0,0.4)] p-0.5">
         <Image
           src={avatarSrc(enemy.avatarIndex)}
           alt=""
@@ -92,6 +92,13 @@ function EnemyCard({ enemy }: { enemy: EnemyPreview }) {
         {/* Name */}
         <span className="whitespace-normal break-words text-left text-[8px] font-bold leading-[9px] text-[var(--text-1)]">
           {enemy.name}
+        </span>
+
+        <span
+          className="game-card-chip w-fit max-w-full rounded-full px-1 py-[1px] text-[6px] font-bold leading-none"
+          style={{ background: ts.bg, color: ts.text, border: `1px solid ${ts.border}` }}
+        >
+          {enemy.traitLabel}
         </span>
 
         {/* Stats */}
