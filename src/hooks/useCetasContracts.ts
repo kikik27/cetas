@@ -23,14 +23,15 @@ export function useChainStatus() {
   const { switchChain } = useSwitchChain()
   const isSepolia = chainId === celoSepolia.id
   const isMainnet = chainId === celo.id
+  // While connecting, chainId is undefined — treat as correct to avoid flash
+  const loading = chainId === undefined
 
   return {
     isSepolia,
     isMainnet,
-    isCorrectChain: isSepolia || isMainnet,
+    isLoading: loading,
+    isCorrectChain: loading || isSepolia || isMainnet,
     chainId,
-    targetChainId: isSepolia ? celo.id : celoSepolia.id,
-    targetChainName: isSepolia ? 'Celo Mainnet' : 'Celo Sepolia',
     switchToSepolia: () => switchChain({ chainId: celoSepolia.id }),
     switchToMainnet: () => switchChain({ chainId: celo.id }),
   }
