@@ -2,36 +2,45 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Zap } from 'lucide-react'
+import { Zap, Loader2, AlertTriangle } from 'lucide-react'
 import { Modal } from '@/src/components/ui/Modal'
 import { Button } from '@/src/components/ui/Button'
-import { useDailyClaimStatus, useOpenChest } from '@/src/hooks/useDailyClaim'
 import { useWallet } from '@/src/providers/WalletProvider'
+import { useCanClaimDaily, useDailyClaimMutation, useTxReceipt, useChainStatus } from '@/src/hooks/useCetasContracts'
 import { cn } from '@/src/lib/utils'
 
 export default function DailyChest() {
-  const { authStatus } = useWallet()
-  const isReady = authStatus === 'authenticated'
+  const { wallet, authStatus } = useWallet()
+  const isReady = authStatus === 'authenticated' && !!wallet
+  const { isCorrectChain, switchToTargetChain, targetChainName } = useChainStatus()
 
-  const { data: claimStatus, isLoading } = useDailyClaimStatus(isReady)
-  const openChestMutation     = useOpenChest()
+  const { data: canClaim, isLoading: claimLoading } = useCanClaimDaily(wallet as `0x${string}`)
+  const { claim, isPending } = useDailyClaimMutation()
+  const [txHash, setTxHash] = useState<`0x${string}` | undefined>(undefined)
+  const { isLoading: isConfirming, isSuccess } = useTxReceipt(txHash)
 
   const [showModal, setShowModal] = useState(false)
   const [animating, setAnimating] = useState(false)
 
-  const chestOpened = claimStatus?.claimed ?? false
-  const reward      = openChestMutation.data ?? claimStatus?.reward
-  const isBusy      = !isReady || isLoading
+  const claimed = !claimLoading && canClaim === false
+  const isBusy = !isReady || claimLoading || isPending || isConfirming
 
-  async function handleOpen() {
-    if (chestOpened || isBusy || animating || openChestMutation.isPending) return
+  const needsChainSwitch = isReady && !isCorrectChain
+
+  async function handleSwitchChain() {
+    switchToTargetChain()
+  }
+
+  async function handleClaim() {
+    if (claimed || isBusy || animating) return
     setAnimating(true)
     setTimeout(async () => {
       try {
-        await openChestMutation.mutateAsync()
+        const tx = await claim()
+        setTxHash(tx)
         setShowModal(true)
       } catch {
-        // silent — chest stays closed
+        // silent
       }
       setAnimating(false)
     }, 600)
@@ -64,11 +73,11 @@ export default function DailyChest() {
             <div className="flex items-center gap-2">
               <Zap className="h-6 w-6 text-[var(--ally)]" />
               <p className="font-display text-[32px] font-bold leading-none text-[var(--ally)]">
-                +{reward?.amount}
+                +10 CETAS
               </p>
             </div>
             <p className="font-display text-[13px] uppercase tracking-wider text-[var(--text-2)]">
-              XP
+              {isConfirming ? 'Confirming...' : isSuccess ? 'Claimed!' : 'On-chain Daily Claim'}
             </p>
           </div>
 
@@ -86,13 +95,31 @@ export default function DailyChest() {
       </Modal>
 
       {/* ── Chest button ── */}
+      {needsChainSwitch ? (
+        <button
+          onClick={handleSwitchChain}
+          className="relic-frame flex w-full items-center gap-2.5 px-3 py-2.5 cursor-pointer hover:border-[var(--warn)] transition-all bg-[rgba(224,128,32,0.08)]"
+        >
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-[rgba(224,128,32,0.4)] bg-[rgba(224,128,32,0.12)]">
+            <AlertTriangle className="h-5 w-5 text-[var(--warn)]" />
+          </div>
+          <div className="min-w-0 flex-1 text-left">
+            <p className="font-display text-[11px] font-bold uppercase tracking-wider text-[var(--warn)]">
+              Wrong Network
+            </p>
+            <p className="text-[9px] text-[var(--text-2)]">
+              Switch to {targetChainName}
+            </p>
+          </div>
+        </button>
+      ) : (
       <button
-        onClick={handleOpen}
-        disabled={chestOpened || isBusy}
-        aria-label="Open daily reward"
+        onClick={handleClaim}
+        disabled={claimed || isBusy}
+        aria-label="Claim daily CETAS"
         className={cn(
           'relic-frame flex w-full items-center gap-2.5 px-3 py-2.5 transition-all',
-          chestOpened || isBusy
+          claimed || isBusy
             ? 'cursor-not-allowed opacity-50'
             : 'cursor-pointer hover:border-[var(--gold-hi)] chest-glow',
           animating && 'chest-shake'
@@ -100,18 +127,22 @@ export default function DailyChest() {
       >
         <div className={cn(
           'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border transition-all',
-          chestOpened
+          claimed
             ? 'border-[var(--border)] bg-[rgba(11,78,162,0.1)]'
             : 'border-[var(--border-gold)] bg-[rgba(200,146,42,0.12)]',
           animating && 'chest-bounce'
         )}>
-          <Image
-            src={chestOpened ? '/assets/ui/opened_chest.png' : '/assets/ui/closed_chest.png'}
-            alt=""
-            width={24} height={24}
-            unoptimized
-            className="pixel object-contain"
-          />
+          {isConfirming ? (
+            <Loader2 className="h-5 w-5 animate-spin text-[var(--gold-hi)]" />
+          ) : (
+            <Image
+              src={claimed ? '/assets/ui/opened_chest.png' : '/assets/ui/closed_chest.png'}
+              alt=""
+              width={24} height={24}
+              unoptimized
+              className="pixel object-contain"
+            />
+          )}
         </div>
 
         <div className="min-w-0 flex-1 text-left">
@@ -120,23 +151,23 @@ export default function DailyChest() {
           </p>
           <p className={cn(
             'text-[9px]',
-            chestOpened || isBusy
+            claimed || isBusy
               ? 'text-[var(--text-3)]'
               : 'animate-pulse font-semibold text-[var(--ok)]'
           )}>
-            {isBusy ? 'Loading...' : chestOpened ? 'Come back tomorrow' : 'XP available!'}
+            {isBusy ? 'Loading...' : claimed ? 'Come back tomorrow' : 'Claim 10 CETAS'}
           </p>
         </div>
 
-        {/* XP badge — only when available */}
-        {!chestOpened && !isBusy && (
-          <div className="flex items-center gap-1 rounded-lg border border-[rgba(74,158,255,0.4)]
-                          bg-[rgba(74,158,255,0.1)] px-2 py-1">
-            <Zap className="h-3 w-3 text-[var(--ally)]" />
-            <span className="font-display text-[9px] font-bold text-[var(--ally)]">XP</span>
+        {!claimed && !isBusy && (
+          <div className="flex items-center gap-1 rounded-lg border border-[rgba(200,146,42,0.4)]
+                          bg-[rgba(200,146,42,0.1)] px-2 py-1">
+            <Zap className="h-3 w-3 text-[var(--gold-hi)]" />
+            <span className="font-display text-[9px] font-bold text-[var(--gold-hi)]">CETAS</span>
           </div>
         )}
       </button>
+      )}
     </>
   )
 }

@@ -1,40 +1,45 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.25;
+pragma solidity ^0.8.27;
 
 import "forge-std/Script.sol";
-import "../src/CeloTactics.sol";
-import "../src/GameUnits.sol";
-import "../src/RewardToken.sol";
+import "../src/CetasPoints.sol";
+import "../src/CetasTreasury.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract Deploy is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address deployer = vm.addr(deployerPrivateKey);
+
         vm.startBroadcast(deployerPrivateKey);
 
-        CetasReward rewardToken = new CetasReward();
-        console.log("CetasReward deployed to:", address(rewardToken));
-
-        GameUnits gameUnits = new GameUnits();
-        console.log("GameUnits deployed to:", address(gameUnits));
-
-        CeloTactics celoTactics = new CeloTactics(
-            address(gameUnits),
-            address(rewardToken)
+        // --- 1. CetasPoints ---
+        CetasPoints pointsImpl = new CetasPoints();
+        console.log("CetasPoints impl:", address(pointsImpl));
+        ERC1967Proxy pointsProxy = new ERC1967Proxy(
+            address(pointsImpl),
+            abi.encodeWithSelector(CetasPoints.initialize.selector, deployer)
         );
-        console.log("CeloTactics deployed to:", address(celoTactics));
+        CetasPoints points = CetasPoints(address(pointsProxy));
+        console.log("CetasPoints proxy:", address(points));
 
-        gameUnits.setGameOperator(address(celoTactics));
-        console.log("GameUnits operator set to CeloTactics");
-
-        rewardToken.transferOwnership(address(celoTactics));
-        console.log("CetasReward ownership transferred to CeloTactics");
+        // --- 2. CetasTreasury ---
+        CetasTreasury treasuryImpl = new CetasTreasury();
+        console.log("CetasTreasury impl:", address(treasuryImpl));
+        ERC1967Proxy treasuryProxy = new ERC1967Proxy(
+            address(treasuryImpl),
+            abi.encodeWithSelector(CetasTreasury.initialize.selector, deployer, address(points), 1e15)
+        );
+        CetasTreasury treasury = CetasTreasury(payable(address(treasuryProxy)));
+        console.log("CetasTreasury proxy:", address(treasury));
 
         vm.stopBroadcast();
 
         console.log("");
-        console.log("--- Deployment Complete ---");
-        console.log("CetasReward: ", address(rewardToken));
-        console.log("GameUnits:   ", address(gameUnits));
-        console.log("CeloTactics: ", address(celoTactics));
+        console.log("=== Deployed ===");
+        console.log("CetasPoints:   ", address(points));
+        console.log("Points impl:   ", address(pointsImpl));
+        console.log("CetasTreasury: ", address(treasury));
+        console.log("Treasury impl: ", address(treasuryImpl));
     }
 }

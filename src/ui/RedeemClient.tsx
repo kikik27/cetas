@@ -4,118 +4,140 @@ import { useMemo, useState } from 'react'
 import Image from 'next/image'
 import {
   AlertTriangle,
+  ArrowRight,
   Check,
-  ChevronRight,
   Coins,
   Loader2,
-  RefreshCw,
-  ShieldCheck,
   Sparkles,
-  Ticket,
   Wallet,
 } from 'lucide-react'
 import { Button } from '@/src/components/ui/Button'
-import { Badge } from '@/src/components/ui/Badge'
-import { EmptyState } from '@/src/components/ui/EmptyState'
-import { LoadingRows } from '@/src/components/ui/LoadingState'
 import { StatTile } from '@/src/components/ui/StatTile'
-import { usePlayer } from '@/src/hooks/usePlayer'
-import { useRedeemPoints, useRedeemSummary } from '@/src/hooks/useRedeem'
 import { useWallet } from '@/src/providers/WalletProvider'
 import { cn } from '@/src/lib/utils'
-import type { PointRedemptionDTO } from '@/src/lib/api-types'
-import { formatCelo, formatPoints, formatShortDate } from '@/src/lib/format'
+import { formatCelo } from '@/src/lib/format'
 import {
-  CELO_PER_POINT,
-  DAILY_REDEEM_LIMIT_POINTS,
-  MIN_REDEEM_POINTS,
-  REDEEM_RATE_LABEL,
-} from '@/src/lib/redeem-config'
+  useBalanceOf,
+  useAllowance,
+  usePreviewSwap,
+  useExchangeRate,
+  useSwapPaused,
+  useApproveMutation,
+  useSwapMutation,
+  useTxReceipt,
+  useChainStatus,
+  toCETASWei,
+  formatCETAS,
+} from '@/src/hooks/useCetasContracts'
+import { TESTNET } from '@/src/lib/contracts'
 
-const QUICK_PRESETS = [250, 500, 1000, 2500]
+const QUICK_PRESETS = [10, 25, 50, 100]
+
+type Step = 'input' | 'approving' | 'swapping' | 'done'
 
 export default function RedeemClient() {
-  const { authStatus, player: walletPlayer } = useWallet()
-  const { data: queryPlayer, isLoading: playerLoading } = usePlayer(authStatus === 'authenticated')
-  const isReady = authStatus === 'authenticated'
-  const { data: summary, isLoading: redeemLoading, isFetching: redeemFetching, refetch } = useRedeemSummary(isReady)
-  const redeemMutation = useRedeemPoints()
-  const player = queryPlayer ?? walletPlayer
+  const { wallet, authStatus } = useWallet()
+  const isReady = authStatus === 'authenticated' && !!wallet
+  const w = wallet as `0x${string}` | undefined
+  const { isCorrectChain, switchToTargetChain, targetChainName } = useChainStatus()
+  const needsChainSwitch = isReady && !isCorrectChain
 
-  const [amount, setAmount] = useState('500')
-  const [toast, setToast] = useState<string | null>(null)
-  const pointsBalance = summary?.totalPoints ?? player?.totalPoints ?? 0
-  const minPoints = summary?.minPoints ?? MIN_REDEEM_POINTS
-  const maxPoints = summary?.maxPoints ?? pointsBalance
-  const rateLabel = summary?.rateLabel ?? REDEEM_RATE_LABEL
-  const celoPerPoint = summary?.celoPerPoint ?? CELO_PER_POINT
-  const dailyLimit = summary?.dailyLimit ?? DAILY_REDEEM_LIMIT_POINTS
-  const redeemedToday = summary?.redeemedToday ?? 0
+  // ── On-chain reads ──────────────────────────────────────────────────────────
+  const { data: balanceWei, refetch: refetchBalance } = useBalanceOf(w)
+  const { data: exchangeRate } = useExchangeRate()
+  const { data: swapPaused } = useSwapPaused()
+  const { data: allowanceWei, refetch: refetchAllowance } = useAllowance(w, TESTNET.CetasTreasury)
 
+  // ── State ────────────────────────────────────────────────────────────────────
+  const [amount, setAmount] = useState('50')
   const parsedAmount = Math.max(0, Number.parseInt(amount.replace(/\D/g, ''), 10) || 0)
-  const estimate = useMemo(() => parsedAmount * celoPerPoint, [parsedAmount, celoPerPoint])
-  const dailyRemaining = Math.max(0, dailyLimit - redeemedToday)
-  const clampedMax = Math.min(pointsBalance || maxPoints, maxPoints, dailyRemaining || maxPoints)
-  const progressPct = dailyLimit > 0
-    ? Math.min(100, Math.round((redeemedToday / dailyLimit) * 100))
-    : 0
+  const amountWei = useMemo(() => parsedAmount > 0 ? toCETASWei(parsedAmount) : BigInt(0), [parsedAmount])
+  const { data: previewWei } = usePreviewSwap(amountWei > BigInt(0) ? amountWei : undefined)
+
+  // ── Transaction ──────────────────────────────────────────────────────────────
+  const [step, setStep] = useState<Step>('input')
+  const [txHash, setTxHash] = useState<`0x${string}` | undefined>(undefined)
+  const [toast, setToast] = useState<string | null>(null)
+  const approveMutation = useApproveMutation()
+  const swapMutation = useSwapMutation()
+  const { isLoading: isConfirming, isSuccess: txDone } = useTxReceipt(txHash)
+
+  // ── Derived ──────────────────────────────────────────────────────────────────
+  const balance = balanceWei as bigint | undefined
+  const allowance = allowanceWei as bigint | undefined
+  const needsApproval = allowance !== undefined && amountWei > BigInt(0) && amountWei > allowance
+  const hasBalance = balance !== undefined && amountWei <= balance
+  const rateDisplay = exchangeRate
+    ? `1,000 CETAS = ${formatCelo(Number(exchangeRate) * 1000 / 1e18)} CELO`
+    : 'Loading...'
 
   const validationMessage =
-    authStatus !== 'authenticated' ? 'Connect your wallet to prepare a redeem request.'
-    : parsedAmount < minPoints ? `Minimum redeem is ${formatPoints(minPoints)} pts.`
-    : pointsBalance > 0 && parsedAmount > pointsBalance ? 'You do not have enough points.'
-    : parsedAmount > maxPoints ? `Redeem cap is ${formatPoints(maxPoints)} pts right now.`
-    : dailyRemaining > 0 && parsedAmount > dailyRemaining ? 'This exceeds the mock daily limit.'
+    !isReady ? 'Connect your wallet to swap.'
+    : needsChainSwitch ? `Switch to ${targetChainName} to swap.`
+    : swapPaused ? 'Swap is currently paused.'
+    : parsedAmount <= 0 ? 'Enter an amount.'
+    : !hasBalance ? 'Insufficient CETAS balance.'
     : null
 
-  const canRedeem = !validationMessage && parsedAmount > 0 && !redeemMutation.isPending
+  const canSwap = !validationMessage && parsedAmount > 0 && step === 'input'
 
-  async function handleRedeem() {
-    if (!canRedeem) return
-
+  async function handleSwap() {
+    if (!canSwap) return
     setToast(null)
+
     try {
-      await redeemMutation.mutateAsync(parsedAmount)
-      setToast('Redeem request queued for contract settlement.')
+      if (needsApproval) {
+        setStep('approving')
+        const approveTx = await approveMutation.approve(TESTNET.CetasTreasury, amountWei)
+        setTxHash(approveTx)
+        await refetchAllowance()
+      }
+
+      setStep('swapping')
+      const swapTx = await swapMutation.swap(amountWei)
+      setTxHash(swapTx)
+      setStep('done')
+      setToast(`Swapped ${parsedAmount} CETAS for ~${previewWei ? formatCelo(Number(previewWei) / 1e18) : '...'} CELO`)
+      await refetchBalance()
     } catch (err) {
-      setToast(err instanceof Error ? err.message : 'Redeem failed.')
+      setStep('input')
+      setToast(err instanceof Error ? err.message : 'Transaction failed')
     }
   }
+
+  const isBusy = step !== 'input' || approveMutation.isPending || swapMutation.isPending || isConfirming
+  const buttonLabel = step === 'approving' ? 'Approving CETAS...'
+    : step === 'swapping' ? 'Swapping...'
+    : step === 'done' ? 'Done!'
+    : needsApproval ? 'Approve & Swap'
+    : 'Swap to CELO'
 
   return (
     <div className="flex h-full flex-col gap-3">
       <div className="flex flex-shrink-0 items-center gap-2 px-1">
         <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl border border-[rgba(200,146,42,0.3)] bg-[rgba(200,146,42,0.08)]">
-          <Image
-            src="/assets/celo/logo-symbol.png"
-            alt=""
-            width={18}
-            height={18}
-            loading="eager"
-            unoptimized
-            className="object-contain"
-            aria-hidden
-          />
+          <Image src="/assets/celo/logo-symbol.png" alt="" width={18} height={18} unoptimized className="object-contain" />
         </div>
         <div>
           <h1 className="font-display text-[13px] font-bold uppercase tracking-[0.15em] text-[var(--gold-hi)]">
-            Redeem Vault
+            Swap CETAS
           </h1>
           <p className="text-[9px] uppercase tracking-wider text-[var(--text-3)]">
-            Points to CELO
+            CETAS → CELO
           </p>
         </div>
-        <Badge className={cn(
-          'ml-auto rounded-full border px-2 py-1 font-display text-[8px] font-bold uppercase tracking-wider',
-          summary
-            ? 'border-[rgba(61,186,106,0.35)] bg-[rgba(61,186,106,0.1)] text-[var(--ok)]'
-            : 'border-[rgba(224,128,32,0.35)] bg-[rgba(224,128,32,0.1)] text-[var(--warn)]'
+        <span className={cn(
+          'ml-auto rounded-full px-2 py-1 font-display text-[8px] font-bold uppercase tracking-wider border',
+          swapPaused
+            ? 'border-[rgba(224,48,48,0.35)] bg-[rgba(224,48,48,0.1)] text-[var(--enemy)]'
+            : 'border-[rgba(61,186,106,0.35)] bg-[rgba(61,186,106,0.1)] text-[var(--ok)]'
         )}>
-          {redeemLoading || redeemFetching ? 'Syncing' : summary ? 'Mock live' : 'Mock mode'}
-        </Badge>
+          {swapPaused ? 'Paused' : 'Live'}
+        </span>
       </div>
 
       <div className="game-scroll flex flex-1 flex-col gap-3 overflow-y-auto">
+        {/* Info banner */}
         <section className="relic-frame overflow-hidden px-4 py-4">
           <div className="relative z-[1] flex items-start gap-3">
             <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border border-[var(--border-gold)] bg-[rgba(200,146,42,0.1)] shadow-[0_0_24px_rgba(200,146,42,0.12)]">
@@ -123,223 +145,138 @@ export default function RedeemClient() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--gold-mid)]">
-                Contract not armed yet
+                On-Chain Swap
               </p>
               <p className="mt-1 text-[11px] leading-relaxed text-[var(--text-2)]">
-                This screen previews the redeem flow. Requests are mock records until the CETAS redeem contract is deployed.
+                Swap your CETAS points for real CELO on Celo Sepolia. Approve then swap — two transactions.
               </p>
             </div>
           </div>
         </section>
 
+        {/* Stats */}
         <section className="grid flex-shrink-0 grid-cols-2 gap-2">
           <StatTile
             icon={<Coins className="h-4 w-4 text-[var(--gold-hi)]" />}
-            label="Points"
-            value={playerLoading && !player ? '...' : formatPoints(pointsBalance)}
+            label="CETAS Balance"
+            value={balance !== undefined ? formatCETAS(balance) : '...'}
           />
           <StatTile
-            icon={ <Image
-            src="/assets/celo/logo-symbol.png"
-            alt=""
-            width={18}
-            height={18}
-            loading="eager"
-            unoptimized
-            className="object-contain"
-            aria-hidden
-          />}
-            label="Est. CELO"
-            value={formatCelo(estimate)}
+            icon={<Image src="/assets/celo/logo-symbol.png" alt="" width={18} height={18} unoptimized className="object-contain" />}
+            label="Est. Receive"
+            value={previewWei ? `${formatCelo(Number(previewWei) / 1e18)} CELO` : '...'}
           />
         </section>
 
+        {/* Swap input */}
         <section className="relic-frame flex flex-col gap-3 px-4 py-4">
           <div className="relative z-[1] flex items-center gap-2">
-            <Ticket className="h-4 w-4 text-[var(--gold-mid)]" />
+            <Wallet className="h-4 w-4 text-[var(--gold-mid)]" />
             <span className="font-display text-[11px] font-bold uppercase tracking-wider text-[var(--gold-hi)]">
-              Redeem Amount
+              Swap Amount
             </span>
             <span className="ml-auto text-[9px] uppercase tracking-wider text-[var(--text-3)]">
-              {rateLabel}
+              {rateDisplay}
             </span>
           </div>
 
           <div className="relative z-[1] rounded-xl border border-[var(--border)] bg-[rgba(4,16,33,0.78)] px-3 py-3">
-            <label htmlFor="redeem-points" className="text-[9px] uppercase tracking-wider text-[var(--text-3)]">
-              Points to redeem
+            <label htmlFor="swap-points" className="text-[9px] uppercase tracking-wider text-[var(--text-3)]">
+              CETAS to swap
             </label>
             <div className="mt-1 flex items-center gap-2">
               <input
-                id="redeem-points"
+                id="swap-points"
                 inputMode="numeric"
-                name="redeem-points"
                 type="text"
                 pattern="[0-9]*"
                 autoComplete="off"
                 value={amount}
-                onChange={event => setAmount(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                onChange={e => setAmount(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 className="min-w-0 flex-1 rounded-md bg-transparent font-display text-[30px] font-black leading-none tabular-nums text-[var(--gold-hi)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-hi)]"
-                aria-describedby="redeem-validation"
+                aria-describedby="swap-validation"
               />
-              <Button
-                type="button"
-                variant="pixelGhost"
-                size="sm"
-                onClick={() => setAmount(String(Math.max(minPoints, clampedMax)))}
-                className="h-8 px-2.5 font-display text-[9px] uppercase tracking-wider text-[var(--gold-hi)]"
-              >
-                Max
-              </Button>
             </div>
             <div className="mt-2 grid grid-cols-4 gap-1.5">
-              {QUICK_PRESETS.map(preset => (
-                <Button
-                  key={preset}
+              {QUICK_PRESETS.map(p => (
+                <button
+                  key={p}
                   type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setAmount(String(Math.min(preset, maxPoints)))}
+                  onClick={() => setAmount(String(p))}
                   className={cn(
-                    'h-8 rounded-lg border px-2 py-1.5 font-display text-[9px] font-bold tabular-nums transition-[background-color,border-color,color,transform]',
-                    parsedAmount === preset
+                    'h-8 rounded-lg border px-2 py-1.5 font-display text-[9px] font-bold tabular-nums transition-colors',
+                    parsedAmount === p
                       ? 'border-[var(--gold-hi)] bg-[var(--gold-hi)] text-[var(--bg-deep)]'
                       : 'border-[var(--border)] bg-[rgba(255,255,255,0.03)] text-[var(--text-2)]'
                   )}
                 >
-                  {formatPoints(preset)}
-                </Button>
+                  {p} CETAS
+                </button>
               ))}
             </div>
           </div>
 
-          <div className="relative z-[1] grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-            <MiniQuote label="Spend" value={`${formatPoints(parsedAmount)} pts`} />
-            <ChevronRight className="h-4 w-4 text-[var(--gold-mid)]" />
-            <MiniQuote label="Receive" value={`${formatCelo(estimate)} CELO`} accent />
+          {/* Swap preview */}
+          <div className="relative z-[1] flex items-center justify-between rounded-xl border border-[var(--border)] bg-[rgba(4,16,33,0.65)] px-4 py-3">
+            <div className="text-center">
+              <p className="text-[8px] uppercase tracking-wider text-[var(--text-3)]">Spend</p>
+              <p className="mt-0.5 font-display text-[12px] font-bold tabular-nums text-[var(--text-1)]">
+                {parsedAmount} CETAS
+              </p>
+            </div>
+            <ArrowRight className="h-5 w-5 text-[var(--gold-mid)]" />
+            <div className="text-center">
+              <p className="text-[8px] uppercase tracking-wider text-[var(--text-3)]">Receive</p>
+              <p className="mt-0.5 font-display text-[12px] font-bold tabular-nums text-[#8fffe0]">
+                {previewWei ? `${formatCelo(Number(previewWei) / 1e18)} CELO` : '...'}
+              </p>
+            </div>
           </div>
 
-          <div className="relative z-[1]">
-            <div className="mb-1 flex items-center justify-between text-[9px] uppercase tracking-wider text-[var(--text-3)]">
-              <span>Mock daily limit</span>
-              <span>{formatPoints(redeemedToday)} / {formatPoints(dailyLimit)}</span>
-            </div>
-            <div className="stat-bar">
-              <div
-                className="stat-bar-fill bg-gradient-to-r from-[var(--ally)] to-[#8fffe0]"
-                style={{ width: `${progressPct}%` }}
-              />
-            </div>
-          </div>
+          {needsApproval && step === 'input' && (
+            <p className="relative z-[1] flex items-center gap-1.5 text-[10px] text-[var(--ally)]">
+              <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+              Approval required first — you&apos;ll sign 2 transactions.
+            </p>
+          )}
 
           {validationMessage && (
-            <p id="redeem-validation" className="relative z-[1] flex items-center gap-1.5 text-[10px] text-[var(--warn)]">
+            <p id="swap-validation" className="relative z-[1] flex items-center gap-1.5 text-[10px] text-[var(--warn)]">
               <AlertTriangle className="h-3 w-3 flex-shrink-0" />
               {validationMessage}
             </p>
           )}
 
           {toast && (
-            <p className="relative z-[1] flex items-center gap-1.5 rounded-lg border border-[rgba(61,186,106,0.25)] bg-[rgba(61,186,106,0.08)] px-3 py-2 text-[10px] text-[var(--ok)]">
+            <p className={cn(
+              'relative z-[1] flex items-center gap-1.5 rounded-lg border px-3 py-2 text-[10px]',
+              step === 'done'
+                ? 'border-[rgba(61,186,106,0.25)] bg-[rgba(61,186,106,0.08)] text-[var(--ok)]'
+                : 'border-[rgba(224,48,48,0.25)] bg-[rgba(224,48,48,0.08)] text-[var(--enemy)]'
+            )}>
               <Check className="h-3 w-3 flex-shrink-0" />
               {toast}
             </p>
           )}
 
           <Button
-            variant="pixelGold"
+            variant={needsChainSwitch ? "pixelDanger" : "pixelGold"}
             size="lg"
-            onClick={handleRedeem}
-            disabled={!canRedeem}
+            onClick={needsChainSwitch ? switchToTargetChain : handleSwap}
+            disabled={needsChainSwitch ? false : (!canSwap || isBusy)}
             className="relative z-[1] w-full font-display text-[12px] font-black uppercase tracking-[0.16em]"
           >
-            {redeemMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wallet className="h-4 w-4" />}
-            Queue Mock Redeem
+            {needsChainSwitch ? (
+              <><AlertTriangle className="h-4 w-4" />Switch to {targetChainName}</>
+            ) : isBusy ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Wallet className="h-4 w-4" />
+            )}
+            {needsChainSwitch ? `Switch to ${targetChainName}` : buttonLabel}
           </Button>
         </section>
-
-        <section className="flex flex-col gap-2">
-          <div className="flex items-center gap-2 px-1">
-            <ShieldCheck className="h-3.5 w-3.5 text-[var(--ally)]" />
-            <p className="font-display text-[10px] uppercase tracking-wider text-[var(--text-3)]">
-              Redeem History
-            </p>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => { redeemMutation.reset(); void refetch() }}
-              className="ml-auto h-7 w-7 rounded-lg p-0 text-[var(--text-3)]"
-              aria-label="Refresh redeem history"
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-
-          {redeemLoading ? (
-            <LoadingRows count={3} />
-          ) : (summary?.history.length ?? 0) === 0 ? (
-            <EmptyState
-              icon={<Wallet className="h-8 w-8" />}
-              title="No redeem requests yet"
-              description="Queue a mock redeem to preview the flow."
-            />
-          ) : (
-            summary?.history.map(item => <HistoryRow key={item.id} item={item} />)
-          )}
-        </section>
       </div>
-    </div>
-  )
-}
-
-function MiniQuote({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <div className="rounded-xl border border-[var(--border)] bg-[rgba(4,16,33,0.65)] px-3 py-2 text-center">
-      <p className="text-[8px] uppercase tracking-wider text-[var(--text-3)]">{label}</p>
-      <p className={cn(
-        'mt-0.5 font-display text-[12px] font-bold tabular-nums',
-        accent ? 'text-[#8fffe0]' : 'text-[var(--text-1)]'
-      )}>
-        {value}
-      </p>
-    </div>
-  )
-}
-
-function HistoryRow({ item }: { item: PointRedemptionDTO }) {
-  const statusStyle = {
-    pending: 'border-[rgba(224,128,32,0.35)] bg-[rgba(224,128,32,0.1)] text-[var(--warn)]',
-    mocked: 'border-[rgba(160,216,255,0.28)] bg-[rgba(160,216,255,0.08)] text-[var(--ally)]',
-    confirmed: 'border-[rgba(61,186,106,0.35)] bg-[rgba(61,186,106,0.1)] text-[var(--ok)]',
-    failed: 'border-[rgba(224,48,48,0.35)] bg-[rgba(224,48,48,0.1)] text-[var(--enemy)]',
-  }[item.status]
-
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[rgba(4,16,33,0.72)] px-3 py-2.5">
-      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-[rgba(200,146,42,0.25)] bg-[rgba(200,146,42,0.08)]">
-         <Image
-            src="/assets/celo/logo-symbol.png"
-            alt=""
-            width={18}
-            height={18}
-            loading="eager"
-            unoptimized
-            className="object-contain"
-            aria-hidden
-          />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="font-display text-[12px] font-bold text-[var(--text-1)]">
-          {formatPoints(item.points)} pts {'->'} {formatCelo(Number(item.celoAmount))} CELO
-        </p>
-        <p className="text-[9px] text-[var(--text-3)]">
-          {formatShortDate(item.createdAt)}
-        </p>
-      </div>
-      <Badge className={cn('rounded-md px-2 py-1 font-display text-[8px] font-bold uppercase tracking-wider', statusStyle)}>
-        {item.status}
-      </Badge>
     </div>
   )
 }

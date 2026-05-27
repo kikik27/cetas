@@ -5,8 +5,11 @@
   "scripts": {
     "compile": "forge build",
     "test": "forge test",
+    "test:verbose": "forge test -vvvv",
     "deploy:sepolia": "forge script script/Deploy.s.sol --rpc-url celo_sepolia --broadcast --verify",
     "deploy:mainnet": "forge script script/Deploy.s.sol --rpc-url celo --broadcast --verify",
+    "verify:sepolia": "forge verify-contract --chain-id 44787 --verifier etherscan --verifier-url https://api-sepolia.celoscan.xyz/api",
+    "verify:mainnet": "forge verify-contract --chain-id 42220 --verifier etherscan --verifier-url https://api.celoscan.xyz/api",
     "clean": "forge clean"
   },
   "devDependencies": {},
