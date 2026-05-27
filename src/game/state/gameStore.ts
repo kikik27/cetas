@@ -19,6 +19,8 @@ import {
 } from '../constants'
 import type { BoardGrid, BenchSlots, Unit } from '../core/types'
 import type { PlayerGameProgressDTO, SavedGameUnitDTO } from '@/src/lib/api-types'
+import { playerKeys } from '@/src/hooks/usePlayer'
+import { queryClient } from '@/src/lib/queryClient'
 
 const MAX_LOG = 5
 
@@ -178,7 +180,18 @@ function persistGameProgress(state: {
       board: serializeBoard(state.board),
       bench: serializeBench(state.bench),
     }),
-  }).catch(() => {})
+  })
+    .then(async res => {
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.data) return
+      queryClient.setQueryData(playerKeys.me, (current: unknown) =>
+        current && typeof current === 'object'
+          ? { ...current, ...json.data }
+          : current
+      )
+      void queryClient.invalidateQueries({ queryKey: ['leaderboard'] })
+    })
+    .catch(() => {})
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({

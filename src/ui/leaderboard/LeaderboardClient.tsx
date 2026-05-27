@@ -28,7 +28,7 @@ export default function LeaderboardClient() {
 
   const leaderboard = data?.leaderboard ?? []
   const myRank      = data?.myRank ?? null
-  const topStreak   = leaderboard.reduce((best, p) => Math.max(best, p.streak), 0)
+  const bestStage   = leaderboard.reduce((best, p) => Math.max(best, p.bestStage), 0)
 
   return (
     <div className="flex h-full flex-col gap-3">
@@ -56,8 +56,8 @@ export default function LeaderboardClient() {
       {/* Stats row */}
       <div className="grid flex-shrink-0 grid-cols-3 gap-2">
         {[
-          { icon: <Trophy className="h-4 w-4 text-[var(--gold-hi)]" />, label: 'Top Points', value: leaderboard[0]?.score.toLocaleString() ?? '-' },
-          { icon: <Swords className="h-4 w-4 text-[var(--enemy)]" />,  label: 'Best Streak', value: topStreak ? topStreak.toString() : '-' },
+          { icon: <Trophy className="h-4 w-4 text-[var(--gold-hi)]" />, label: 'Top Score', value: leaderboard[0]?.score.toLocaleString() ?? '-' },
+          { icon: <Swords className="h-4 w-4 text-[var(--enemy)]" />,  label: 'Best Stage', value: bestStage ? bestStage.toString() : '-' },
           { icon: <Shield className="h-4 w-4 text-[var(--ally)]" />,   label: 'Players',     value: leaderboard.length.toString() },
         ].map(s => (
           <div key={s.label} className="relic-frame flex flex-col items-center gap-1 px-2 py-3">
@@ -133,13 +133,18 @@ export default function LeaderboardClient() {
                           <Flame className="h-2.5 w-2.5" />{p.streak}
                         </span>
                       )}
+                      {p.bestStage > 1 && (
+                        <span className="text-[9px] font-semibold text-[var(--ally)]">
+                          Stage {p.bestStage}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="flex-shrink-0 text-right">
                     <p className="font-display text-[13px] font-bold tabular-nums text-[var(--gold-hi)]">
                       {p.score.toLocaleString()}
                     </p>
-                    <p className="text-[9px] text-[var(--text-3)]">Stage {p.wins + 1}</p>
+                    <p className="text-[9px] text-[var(--text-3)]">{p.points.toLocaleString()} pts</p>
                   </div>
                 </div>
               )

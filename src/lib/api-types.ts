@@ -39,6 +39,7 @@ export interface PlayerDTO {
   totalPoints:     number
   level:           number
   endlessStage:    number
+  bestStage:       number
   gameProgress:    PlayerGameProgressDTO | null
   streakDays:      number
   referralCode:    string
@@ -110,6 +111,8 @@ export interface LeaderboardEntryDTO {
   name:      string
   avatarIdx: number
   score:     number
+  points:    number
+  bestStage: number
   wins:      number
   streak:    number
   tier:      string
