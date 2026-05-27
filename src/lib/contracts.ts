@@ -11,10 +11,9 @@ export const SEPOLIA = {
 } as const
 
 // ─── Mainnet (Celo) ──────────────────────────────────────────────────────
-// NOTE: Fill after mainnet deployment
 export const MAINNET = {
-  CetasPoints:   '0x0000000000000000000000000000000000000000' as `0x${string}`,
-  CetasTreasury: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+  CetasPoints:   '0x6992C92BCbd76Fe839B07ff05153974Eabaa5942' as `0x${string}`,
+  CetasTreasury: '0x0db1886De821C79AfA1c3f923D1919556c6395A4' as `0x${string}`,
 } as const
 
 export { CetasPointsABI, CetasTreasuryABI }

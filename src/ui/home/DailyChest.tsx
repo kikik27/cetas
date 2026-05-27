@@ -12,7 +12,7 @@ import { cn } from '@/src/lib/utils'
 export default function DailyChest() {
   const { wallet, authStatus } = useWallet()
   const isReady = authStatus === 'authenticated' && !!wallet
-  const { isCorrectChain, switchToTargetChain, targetChainName } = useChainStatus()
+  const { isCorrectChain, switchToSepolia, switchToMainnet } = useChainStatus()
 
   const { data: canClaim, isLoading: claimLoading } = useCanClaimDaily(wallet as `0x${string}`)
   const { claim, isPending } = useDailyClaimMutation()
@@ -28,7 +28,7 @@ export default function DailyChest() {
   const needsChainSwitch = isReady && !isCorrectChain
 
   async function handleSwitchChain() {
-    switchToTargetChain()
+    switchToSepolia()
   }
 
   async function handleClaim() {
@@ -108,7 +108,7 @@ export default function DailyChest() {
               Wrong Network
             </p>
             <p className="text-[9px] text-[var(--text-2)]">
-              Switch to {targetChainName}
+              Switch to Celo Mainnet or Sepolia
             </p>
           </div>
         </button>

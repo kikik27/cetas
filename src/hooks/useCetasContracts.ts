@@ -9,34 +9,39 @@ import {
   useSwitchChain,
 } from 'wagmi'
 import { parseUnits, formatUnits, type Address } from 'viem'
-import { celoSepolia } from 'wagmi/chains'
+import { celo, celoSepolia } from 'wagmi/chains'
 import {
   CetasPointsABI,
   CetasTreasuryABI,
-  TESTNET,
+  SEPOLIA,
+  MAINNET,
   CETAS_DECIMALS,
 } from '@/src/lib/contracts'
 
 export function useChainStatus() {
   const { chainId } = useAccount()
   const { switchChain } = useSwitchChain()
-  const isCorrectChain = chainId === celoSepolia.id
+  const isSepolia = chainId === celoSepolia.id
+  const isMainnet = chainId === celo.id
 
   return {
-    isCorrectChain,
+    isSepolia,
+    isMainnet,
+    isCorrectChain: isSepolia || isMainnet,
     chainId,
-    targetChainId: celoSepolia.id,
-    targetChainName: celoSepolia.name,
-    switchToTargetChain: () => switchChain({ chainId: celoSepolia.id }),
+    targetChainId: isSepolia ? celo.id : celoSepolia.id,
+    targetChainName: isSepolia ? 'Celo Mainnet' : 'Celo Sepolia',
+    switchToSepolia: () => switchChain({ chainId: celoSepolia.id }),
+    switchToMainnet: () => switchChain({ chainId: celo.id }),
   }
 }
 
 function useAddrs() {
   const { chainId } = useAccount()
-  // Always return TESTNET — only Sepolia works for now
-  return chainId ? TESTNET : null
+  if (chainId === celo.id) return MAINNET
+  if (chainId === celoSepolia.id) return SEPOLIA
+  return null
 }
-
 // ─── CetasPoints: Read ──────────────────────────────────────────────────
 
 export function useBalanceOf(address?: Address) {
