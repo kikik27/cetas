@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Swords, ChevronLeft, ChevronRight, Check, Loader2, CircleCheck, CircleX } from 'lucide-react'
@@ -23,6 +23,10 @@ export default function LandingGate({ className }: { className?: string }) {
   const [avatarIdx, setAvatarIdx] = useState(1)
   const [saving,    setSaving]    = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+
+  const handleClose = useCallback(() => {
+    if (!saving) setOpen(false)
+  }, [saving])
 
   // Real-time name availability check
   const nameCheck = useCheckName(name, 400)
@@ -103,7 +107,7 @@ export default function LandingGate({ className }: { className?: string }) {
 
   return (
     <>
-      <Modal show={open} onClose={() => !saving && setOpen(false)} persistent={saving}>
+      <Modal show={open} onClose={handleClose} persistent={saving}>
         <div className="rpg-modal-bar" />
 
         {/* Step indicator */}

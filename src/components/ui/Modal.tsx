@@ -22,7 +22,14 @@ export function Modal({ show, onClose, children, persistent = false, ariaLabel, 
     openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    window.setTimeout(() => panelRef.current?.focus(), 0)
+    // Only focus the panel if nothing inside it is already focused
+    window.setTimeout(() => {
+      const panel = panelRef.current
+      if (!panel) return
+      if (!panel.contains(document.activeElement)) {
+        panel.focus()
+      }
+    }, 0)
 
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !persistent) onClose?.()
