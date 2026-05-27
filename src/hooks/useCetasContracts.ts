@@ -8,7 +8,7 @@ import {
   useAccount,
   useSwitchChain,
 } from 'wagmi'
-import { parseUnits, formatUnits, type Address } from 'viem'
+import { parseUnits, formatUnits, type Abi, type Address, type Hash } from 'viem'
 import { celo } from 'wagmi/chains'
 import {
   CetasPointsABI,
@@ -16,6 +16,9 @@ import {
   MAINNET,
   CETAS_DECIMALS,
 } from '@/src/lib/contracts'
+
+const cetasPointsAbi = CetasPointsABI as Abi
+const cetasTreasuryAbi = CetasTreasuryABI as Abi
 
 export function useChainStatus() {
   const { chainId } = useAccount()
@@ -41,7 +44,7 @@ export function useBalanceOf(address?: Address) {
   const addr = useAddrs()
   return useReadContract({
     address: addr?.CetasPoints,
-    abi: CetasPointsABI as any,
+    abi: cetasPointsAbi,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
     query: { enabled: !!address && !!addr },
@@ -52,7 +55,7 @@ export function useCanClaimDaily(address?: Address) {
   const addr = useAddrs()
   return useReadContract({
     address: addr?.CetasPoints,
-    abi: CetasPointsABI as any,
+    abi: cetasPointsAbi,
     functionName: 'canClaimDaily',
     args: address ? [address] : undefined,
     query: { enabled: !!address && !!addr },
@@ -63,7 +66,7 @@ export function useDailyClaimAmount() {
   const addr = useAddrs()
   return useReadContract({
     address: addr?.CetasPoints,
-    abi: CetasPointsABI as any,
+    abi: cetasPointsAbi,
     functionName: 'dailyClaimAmount',
     query: { enabled: !!addr },
   })
@@ -73,7 +76,7 @@ export function useAllowance(owner?: Address, spender?: Address) {
   const addr = useAddrs()
   return useReadContract({
     address: addr?.CetasPoints,
-    abi: CetasPointsABI as any,
+    abi: cetasPointsAbi,
     functionName: 'allowance',
     args: owner && spender ? [owner, spender] : undefined,
     query: { enabled: !!owner && !!spender && !!addr },
@@ -89,7 +92,7 @@ export function useDailyClaimMutation() {
     if (!addr) throw new Error('No contract address')
     return writeContractAsync({
       address: addr.CetasPoints,
-      abi: CetasPointsABI as any,
+      abi: cetasPointsAbi,
       functionName: 'dailyClaim',
     })
   }, [writeContractAsync, addr])
@@ -103,7 +106,7 @@ export function useApproveMutation() {
     if (!addr) throw new Error('No contract address')
     return writeContractAsync({
       address: addr.CetasPoints,
-      abi: CetasPointsABI as any,
+      abi: cetasPointsAbi,
       functionName: 'approve',
       args: [spender, amount],
     })
@@ -117,7 +120,7 @@ export function useExchangeRate() {
   const addr = useAddrs()
   return useReadContract({
     address: addr?.CetasTreasury,
-    abi: CetasTreasuryABI as any,
+    abi: cetasTreasuryAbi,
     functionName: 'exchangeRate',
     query: { enabled: !!addr },
   })
@@ -127,7 +130,7 @@ export function usePreviewSwap(pointsAmount?: bigint) {
   const addr = useAddrs()
   return useReadContract({
     address: addr?.CetasTreasury,
-    abi: CetasTreasuryABI as any,
+    abi: cetasTreasuryAbi,
     functionName: 'previewSwap',
     args: pointsAmount !== undefined ? [pointsAmount] : undefined,
     query: { enabled: pointsAmount !== undefined && pointsAmount > BigInt(0) && !!addr },
@@ -138,7 +141,7 @@ export function useSwapPaused() {
   const addr = useAddrs()
   return useReadContract({
     address: addr?.CetasTreasury,
-    abi: CetasTreasuryABI as any,
+    abi: cetasTreasuryAbi,
     functionName: 'paused',
     query: { enabled: !!addr },
   })
@@ -153,7 +156,7 @@ export function useSwapMutation() {
     if (!addr) throw new Error('No contract address')
     return writeContractAsync({
       address: addr.CetasTreasury,
-      abi: CetasTreasuryABI as any,
+      abi: cetasTreasuryAbi,
       functionName: 'swapPointsToCelo',
       args: [pointsAmount],
     })
@@ -163,7 +166,7 @@ export function useSwapMutation() {
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
-export function useTxReceipt(hash?: Address) {
+export function useTxReceipt(hash?: Hash) {
   return useWaitForTransactionReceipt({ hash })
 }
 

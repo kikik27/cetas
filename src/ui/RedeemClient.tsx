@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import {
   AlertTriangle,
@@ -8,7 +8,6 @@ import {
   Check,
   Coins,
   Loader2,
-  Sparkles,
   Wallet,
 } from 'lucide-react'
 import { Button } from '@/src/components/ui/Button'
@@ -33,7 +32,8 @@ import { MAINNET } from '@/src/lib/contracts'
 
 const QUICK_PRESETS = [10, 25, 50, 100]
 
-type Step = 'input' | 'approving' | 'swapping' | 'done'
+type Step = 'input' | 'approving' | 'swapping'
+type ToastKind = 'success' | 'error'
 
 export default function RedeemClient() {
   const { wallet, authStatus } = useWallet()
@@ -57,10 +57,14 @@ export default function RedeemClient() {
   // ── Transaction ──────────────────────────────────────────────────────────────
   const [step, setStep] = useState<Step>('input')
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>(undefined)
+  const [settlementHash, setSettlementHash] = useState<`0x${string}` | undefined>(undefined)
+  const settledSwapRef = useRef<`0x${string}` | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const [toastKind, setToastKind] = useState<ToastKind>('success')
+  const [pendingSwapSummary, setPendingSwapSummary] = useState('')
   const approveMutation = useApproveMutation()
   const swapMutation = useSwapMutation()
-  const { isLoading: isConfirming, isSuccess: txDone } = useTxReceipt(txHash)
+  const { data: receipt, isLoading: isConfirming } = useTxReceipt(txHash)
 
   // ── Derived ──────────────────────────────────────────────────────────────────
   const balance = balanceWei as bigint | undefined
@@ -84,6 +88,7 @@ export default function RedeemClient() {
   async function handleSwap() {
     if (!canSwap) return
     setToast(null)
+    setSettlementHash(undefined)
 
     try {
       if (needsApproval) {
@@ -96,19 +101,45 @@ export default function RedeemClient() {
       setStep('swapping')
       const swapTx = await swapMutation.swap(amountWei)
       setTxHash(swapTx)
-      setStep('done')
-      setToast(`Swapped ${parsedAmount} CETAS for ~${previewWei ? formatCelo(Number(previewWei) / 1e18) : '...'} CELO`)
-      await refetchBalance()
+      setSettlementHash(swapTx)
+      setPendingSwapSummary(`Swapped ${parsedAmount} CETAS for ~${previewWei ? formatCelo(Number(previewWei) / 1e18) : '...'} CELO`)
     } catch (err) {
       setStep('input')
+      setToastKind('error')
       setToast(err instanceof Error ? err.message : 'Transaction failed')
     }
   }
 
+  useEffect(() => {
+    if (!settlementHash || !receipt || settledSwapRef.current === settlementHash) return
+    if (receipt.transactionHash.toLowerCase() !== settlementHash.toLowerCase()) return
+
+    settledSwapRef.current = settlementHash
+    void (async () => {
+      try {
+        if (receipt.status !== 'success') {
+          setToastKind('error')
+          setToast('Swap transaction reverted.')
+          return
+        }
+
+        await Promise.all([refetchBalance(), refetchAllowance()])
+        setToastKind('success')
+        setToast(pendingSwapSummary || 'Swap complete. Balance refreshed.')
+      } catch {
+        setToastKind('success')
+        setToast(pendingSwapSummary || 'Swap complete. Refresh your balance if it looks stale.')
+      } finally {
+        setStep('input')
+        setSettlementHash(undefined)
+        setTxHash(undefined)
+      }
+    })()
+  }, [pendingSwapSummary, receipt, refetchAllowance, refetchBalance, settlementHash])
+
   const isBusy = step !== 'input' || approveMutation.isPending || swapMutation.isPending || isConfirming
   const buttonLabel = step === 'approving' ? 'Approving CETAS...'
     : step === 'swapping' ? 'Swapping...'
-    : step === 'done' ? 'Done!'
     : needsApproval ? 'Approve & Swap'
     : 'Swap to CELO'
 
@@ -137,23 +168,6 @@ export default function RedeemClient() {
       </div>
 
       <div className="game-scroll flex flex-1 flex-col gap-3 overflow-y-auto">
-        {/* Info banner */}
-        <section className="relic-frame overflow-hidden px-4 py-4">
-          <div className="relative z-[1] flex items-start gap-3">
-            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border border-[var(--border-gold)] bg-[rgba(200,146,42,0.1)] shadow-[0_0_24px_rgba(200,146,42,0.12)]">
-              <Sparkles className="h-5 w-5 text-[var(--gold-hi)]" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--gold-mid)]">
-                On-Chain Swap
-              </p>
-              <p className="mt-1 text-[11px] leading-relaxed text-[var(--text-2)]">
-                Swap your CETAS points for real CELO on Celo Sepolia. Approve then swap — two transactions.
-              </p>
-            </div>
-          </div>
-        </section>
-
         {/* Stats */}
         <section className="grid flex-shrink-0 grid-cols-2 gap-2">
           <StatTile
@@ -227,7 +241,7 @@ export default function RedeemClient() {
             <ArrowRight className="h-5 w-5 text-[var(--gold-mid)]" />
             <div className="text-center">
               <p className="text-[8px] uppercase tracking-wider text-[var(--text-3)]">Receive</p>
-              <p className="mt-0.5 font-display text-[12px] font-bold tabular-nums text-[#8fffe0]">
+              <p className="mt-0.5 font-display text-[12px] font-bold tabular-nums text-[var(--gold-mid)]">
                 {previewWei ? `${formatCelo(Number(previewWei) / 1e18)} CELO` : '...'}
               </p>
             </div>
@@ -250,7 +264,7 @@ export default function RedeemClient() {
           {toast && (
             <p className={cn(
               'relative z-[1] flex items-center gap-1.5 rounded-lg border px-3 py-2 text-[10px]',
-              step === 'done'
+              toastKind === 'success'
                 ? 'border-[rgba(61,186,106,0.25)] bg-[rgba(61,186,106,0.08)] text-[var(--ok)]'
                 : 'border-[rgba(224,48,48,0.25)] bg-[rgba(224,48,48,0.08)] text-[var(--enemy)]'
             )}>
