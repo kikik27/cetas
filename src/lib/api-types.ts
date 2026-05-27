@@ -142,6 +142,8 @@ export interface LeaderboardEntryDTO {
   avatarIdx: number
   score:     number
   points:    number
+  experience: number
+  level:     number
   bestStage: number
   wins:      number
   streak:    number
