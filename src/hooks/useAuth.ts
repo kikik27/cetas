@@ -4,12 +4,10 @@
  * useAuth — manages the full auth lifecycle.
  *
  * Flow:
- * 1. On mount: call GET /api/auth/me to restore existing session
- * 2. When wallet address appears (wagmi auto-connect):
- *    - If session already matches this wallet → done
- *    - Otherwise → POST /api/auth/login to load profile + set cookie
- * 3. Expose player profile, loading state, and isNewPlayer flag
- *    (isNewPlayer = true → caller should show onboarding modal)
+ * 1. On mount: GET /api/auth/me to restore existing session
+ * 2. When wallet appears after restore completes:
+ *    - session wallet matches → already authenticated, skip
+ *    - no session → POST /api/auth/login (challenge + personal_sign)
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react'
@@ -17,9 +15,9 @@ import { useQueryClient } from '@tanstack/react-query'
 import type { LoginResponseDTO, PlayerDTO } from '@/src/lib/api-types'
 
 export type AuthStatus =
-  | 'idle'        // not started
-  | 'restoring'   // checking existing session via /api/auth/me
-  | 'logging-in'  // calling /api/auth/login with wallet address
+  | 'idle'           // initial
+  | 'restoring'      // GET /api/auth/me in-flight
+  | 'logging-in'     // POST /api/auth/login in-flight
   | 'authenticated'
   | 'unauthenticated'
   | 'error'
@@ -31,72 +29,73 @@ export interface AuthState {
   error:       string | null
 }
 
+// ─── API helpers ──────────────────────────────────────────────────────────────
+
 async function fetchMe(): Promise<PlayerDTO | null> {
   try {
     const res = await fetch('/api/auth/me', { credentials: 'include' })
     if (!res.ok) return null
     const json = await res.json()
-    return json.data ?? null
+    return (json.data as PlayerDTO) ?? null
   } catch {
     return null
   }
 }
 
 async function login(wallet: string): Promise<LoginResponseDTO> {
-  let payload: { wallet: string; message?: string; signature?: string } = { wallet }
+  // In dev without window.ethereum, skip SIWE and send wallet-only payload
+  type EthProvider = { request: (a: { method: string; params?: unknown[] }) => Promise<unknown> }
+  const win = typeof window === 'undefined'
+    ? undefined
+    : (window as unknown as { ethereum?: EthProvider })
 
-  // Resolve ethereum provider — MiniPay injects window.ethereum but may not
-  // be ready immediately on first paint; poll briefly before giving up.
-  const getEthereum = async () => {
-    type EthProvider = { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> }
-    const win = typeof window === 'undefined' ? undefined : window as unknown as { ethereum?: EthProvider }
-    if (win?.ethereum) return win.ethereum
-    // Wait up to 2 s for MiniPay to inject the provider
+  // Poll up to 2 s for MiniPay to inject window.ethereum
+  let ethereum = win?.ethereum
+  if (!ethereum) {
     for (let i = 0; i < 20; i++) {
       await new Promise(r => setTimeout(r, 100))
-      if (win?.ethereum) return win.ethereum
+      ethereum = win?.ethereum
+      if (ethereum) break
     }
-    return undefined
   }
 
-  const ethereum = await getEthereum()
-
-  if (process.env.NODE_ENV !== 'development' || ethereum) {
-    const challengeRes = await fetch('/api/auth/challenge', {
-      method:      'POST',
-      headers:     { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body:        JSON.stringify({ wallet }),
+  // Dev bypass: no ethereum provider → skip SIWE
+  if (process.env.NODE_ENV === 'development' && !ethereum) {
+    const res  = await fetch('/api/auth/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      credentials: 'include', body: JSON.stringify({ wallet }),
     })
-    const challengeJson = await challengeRes.json()
-    if (!challengeRes.ok || challengeJson.error) {
-      throw new Error(challengeJson.error ?? 'Failed to create auth challenge')
-    }
-
-    const message = challengeJson.data.message as string
-    if (!ethereum) throw new Error('Wallet provider unavailable — open this app inside MiniPay')
-
-    let signature: unknown
-    try {
-      // MiniPay uses personal_sign with params [message, address]
-      signature = await ethereum.request({
-        method: 'personal_sign',
-        params: [message, wallet],
-      })
-    } catch (signErr) {
-      const msg = signErr instanceof Error ? signErr.message : String(signErr)
-      throw new Error(`Signature rejected: ${msg}`)
-    }
-    if (typeof signature !== 'string') throw new Error('Invalid wallet signature response')
-
-    payload = { wallet, message, signature }
+    const json = await res.json()
+    if (!res.ok || json.error) throw new Error(json.error ?? 'Login failed')
+    return json.data as LoginResponseDTO
   }
 
-  const res = await fetch('/api/auth/login', {
-    method:      'POST',
-    headers:     { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body:        JSON.stringify(payload),
+  if (!ethereum) throw new Error('Wallet provider unavailable — open this app inside MiniPay')
+
+  // Get challenge
+  const challengeRes = await fetch('/api/auth/challenge', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    credentials: 'include', body: JSON.stringify({ wallet }),
+  })
+  const challengeJson = await challengeRes.json()
+  if (!challengeRes.ok || challengeJson.error) {
+    throw new Error(challengeJson.error ?? 'Failed to create auth challenge')
+  }
+  const message = challengeJson.data.message as string
+
+  // Sign — MiniPay uses personal_sign with [message, address]
+  let signature: unknown
+  try {
+    signature = await ethereum.request({ method: 'personal_sign', params: [message, wallet] })
+  } catch (err) {
+    throw new Error(`Signature rejected: ${err instanceof Error ? err.message : String(err)}`)
+  }
+  if (typeof signature !== 'string') throw new Error('Invalid signature response')
+
+  // Login
+  const res  = await fetch('/api/auth/login', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    credentials: 'include', body: JSON.stringify({ wallet, message, signature }),
   })
   const json = await res.json()
   if (!res.ok || json.error) throw new Error(json.error ?? 'Login failed')
@@ -113,87 +112,107 @@ export function useAuth(wallet: string | null) {
   const qc = useQueryClient()
 
   const [state, setState] = useState<AuthState>({
-    status:      'idle',
-    player:      null,
-    isNewPlayer: false,
-    error:       null,
+    status: 'idle', player: null, isNewPlayer: false, error: null,
   })
 
-  // Track which wallet we last authenticated to avoid duplicate calls
-  const authedWalletRef = useRef<string | null>(null)
-  const hasRestoredRef  = useRef(false)
+  // Refs that survive re-renders without causing effect re-runs
+  const loginInFlightRef  = useRef(false)   // true while login() is running
+  const restoredRef       = useRef(false)   // true after fetchMe() completes
+  const restoringRef      = useRef(false)   // true while fetchMe() is running
+  const authedWalletRef   = useRef<string | null>(null)
+  const [loginTrigger, setLoginTrigger] = useState(0)  // increment to force Step 2 re-run
 
   // ── Step 1: Restore session on mount ──────────────────────────────────────
   useEffect(() => {
-    if (hasRestoredRef.current) return
-    hasRestoredRef.current = true
+    if (restoringRef.current || restoredRef.current) return
+    restoringRef.current = true
 
+    let cancelled = false
     setState(s => ({ ...s, status: 'restoring' }))
 
     fetchMe().then(player => {
+      if (cancelled) return
+      restoredRef.current  = true
+      restoringRef.current = false
+
       if (player) {
-        authedWalletRef.current = player.walletAddress
+        authedWalletRef.current = player.walletAddress.toLowerCase()
         setState({ status: 'authenticated', player, isNewPlayer: false, error: null })
-        // Seed TanStack Query cache so usePlayer() hooks work immediately
         qc.setQueryData(['player', player.walletAddress], player)
         qc.setQueryData(['player', 'me'], player)
       } else {
         setState(s => ({ ...s, status: 'unauthenticated' }))
       }
     })
+
+    return () => {
+      cancelled = true
+      // Allow re-run after Strict Mode unmount
+      restoringRef.current = false
+      restoredRef.current  = false
+    }
   }, [qc])
 
-  // ── Step 2: Login when wallet address becomes available ───────────────────
+  // ── Step 2: Login once restore is done and wallet is available ────────────
   useEffect(() => {
     if (!wallet) return
-    // Already authenticated with this wallet
-    if (authedWalletRef.current === wallet) return
-    // Still restoring — wait for it to finish (do NOT mark wallet yet)
-    if (state.status === 'restoring') return
+    if (!restoredRef.current) return          // wait for fetchMe to finish
+    if (loginInFlightRef.current) return      // login already running
+    if (authedWalletRef.current === wallet) return  // already authed
+    loginInFlightRef.current = true
+    authedWalletRef.current  = wallet
 
-    // Mark wallet AFTER the early-return guards so we don't skip login
-    authedWalletRef.current = wallet
+    let cancelled = false
 
     const runLogin = async () => {
       setState(s => ({ ...s, status: 'logging-in', error: null }))
       try {
         const data = await login(wallet)
+        if (cancelled) return
         setState({
-          status:      'authenticated',
-          player:      data.player,
-          isNewPlayer: data.isNewPlayer,
-          error:       null,
+          status: 'authenticated', player: data.player,
+          isNewPlayer: data.isNewPlayer, error: null,
         })
         if (data.player) {
           qc.setQueryData(['player', data.player.walletAddress], data.player)
           qc.setQueryData(['player', 'me'], data.player)
         }
       } catch (err) {
-        // Reset so a retry (e.g. user taps "Try Again") can re-trigger login
+        if (cancelled) return
         authedWalletRef.current = null
         setState({ status: 'error', player: null, isNewPlayer: false, error: String(err) })
+      } finally {
+        loginInFlightRef.current = false
       }
     }
 
     void runLogin()
-  }, [wallet, state.status, qc])
 
-  // ── Retry login after error ───────────────────────────────────────────────
+    return () => { cancelled = true }
+  // wallet is the only real trigger — all other guards use refs
+  // loginTrigger forces re-run after retryLogin
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wallet, loginTrigger, qc])
+
+  // ── Retry: reset so Step 2 can re-run ─────────────────────────────────────
   const retryLogin = useCallback(() => {
     if (state.status !== 'error') return
-    // Reset status so Step 2 effect re-runs
+    authedWalletRef.current  = null
+    loginInFlightRef.current = false
     setState(s => ({ ...s, status: 'unauthenticated', error: null }))
+    setLoginTrigger(n => n + 1)  // force Step 2 effect to re-run
   }, [state.status])
 
-  // ── Logout ────────────────────────────────────────────────────────────────
+  // ── Sign out ───────────────────────────────────────────────────────────────
   const signOut = useCallback(async () => {
     await logout()
-    authedWalletRef.current = null
+    authedWalletRef.current  = null
+    loginInFlightRef.current = false
     qc.clear()
     setState({ status: 'unauthenticated', player: null, isNewPlayer: false, error: null })
   }, [qc])
 
-  // ── Update player in local state (after onboarding save) ──────────────────
+  // ── Update player after onboarding ────────────────────────────────────────
   const updatePlayer = useCallback((patch: Partial<PlayerDTO>) => {
     setState(s => {
       const updated = s.player ? { ...s.player, ...patch } : asPlayerDTO(patch)
@@ -208,7 +227,8 @@ export function useAuth(wallet: string | null) {
 }
 
 function asPlayerDTO(value: Partial<PlayerDTO>): PlayerDTO | null {
-  return typeof value.id === 'string' &&
+  return (
+    typeof value.id === 'string' &&
     typeof value.walletAddress === 'string' &&
     typeof value.name === 'string' &&
     typeof value.avatarIdx === 'number' &&
@@ -222,6 +242,5 @@ function asPlayerDTO(value: Partial<PlayerDTO>): PlayerDTO | null {
     typeof value.referralCode === 'string' &&
     typeof value.lastLoginAt === 'string' &&
     typeof value.nameChangesLeft === 'number'
-    ? value as PlayerDTO
-    : null
+  ) ? (value as PlayerDTO) : null
 }
