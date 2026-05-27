@@ -13,7 +13,7 @@
  */
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { useConnection } from 'wagmi'
+import { useAccount } from 'wagmi'
 import { useAutoConnect } from '@/src/hooks/useAutoConnect'
 import { useAuth, type AuthStatus } from '@/src/hooks/useAuth'
 import { isMiniPayEnvironment } from '@/src/lib/wagmi'
@@ -60,48 +60,39 @@ const WalletContext = createContext<WalletContextValue>({
 // ─── Inner bridge — must live inside WagmiProvider ───────────────────────────
 
 function WalletContextBridge({ children }: { children: React.ReactNode }) {
-  const { address, isConnected, isConnecting } = useConnection()
+  const { address, isConnected, isConnecting } = useAccount()
   const { error: connectError, isPending }     = useAutoConnect()
   const [isMiniPay, setIsMiniPay]              = useState(() => isMiniPayEnvironment())
 
-  // Dev fallback: stable mock address when no MiniPay available
+  // Re-detect after mount (window not available during SSR)
+  useEffect(() => { setIsMiniPay(isMiniPayEnvironment()) }, [])
+
+  // Dev fallback: stable mock address persisted in localStorage
   const [devWallet, setDevWallet] = useState<string | null>(null)
-
-  useEffect(() => {
-    const detectMiniPay = async () => {
-      setIsMiniPay(isMiniPayEnvironment())
-    }
-    void detectMiniPay()
-  }, [])
-
   useEffect(() => {
     if (process.env.NODE_ENV !== 'development') return
     if (address) return
-
-    const loadDevWallet = async () => {
-      const stored = localStorage.getItem('cetas_dev_wallet')
-      if (stored) { setDevWallet(stored); return }
-
-      const mock = '0x' + Array.from({ length: 40 }, () =>
-        Math.floor(Math.random() * 16).toString(16)
-      ).join('')
-      localStorage.setItem('cetas_dev_wallet', mock)
-      setDevWallet(mock)
-    }
-
-    void loadDevWallet()
+    const stored = localStorage.getItem('cetas_dev_wallet')
+    if (stored) { setDevWallet(stored); return }
+    const mock = '0x' + Array.from({ length: 40 }, () =>
+      Math.floor(Math.random() * 16).toString(16)
+    ).join('')
+    localStorage.setItem('cetas_dev_wallet', mock)
+    setDevWallet(mock)
   }, [address])
 
-  const effectiveWallet   = address?.toLowerCase() ?? devWallet ?? null
+  const effectiveWallet    = address?.toLowerCase() ?? devWallet ?? null
   const effectiveConnected = isConnected || (process.env.NODE_ENV === 'development' && !!devWallet)
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   const { status: authStatus, player, isNewPlayer, updatePlayer, signOut, retryLogin } =
     useAuth(effectiveWallet)
 
+  // connecting = true while wagmi is connecting OR auth is in any loading state
   const connecting =
     isConnecting ||
     isPending ||
+    authStatus === 'idle' ||
     authStatus === 'restoring' ||
     authStatus === 'logging-in'
 
