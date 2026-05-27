@@ -72,6 +72,12 @@ export const progressTaskBodySchema = z.object({
   increment: z.number().int().min(1).max(100).optional().default(1),
 })
 
+// ─── Redeem ──────────────────────────────────────────────────────────────────
+
+export const redeemPointsBodySchema = z.object({
+  points: z.number().int().min(100, 'Minimum redeem is 100 points').max(1_000_000),
+})
+
 // ─── Friends ─────────────────────────────────────────────────────────────────
 
 export const claimFriendBodySchema = z.object({

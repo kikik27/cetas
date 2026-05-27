@@ -94,6 +94,32 @@ export interface DailyClaimStatusDTO {
   reward:     DailyClaimDTO | null
 }
 
+// ─── Redeem ──────────────────────────────────────────────────────────────────
+export interface PointRedemptionDTO {
+  id:         string
+  points:     number
+  celoAmount: string
+  status:     'mocked' | 'pending' | 'confirmed' | 'failed'
+  txHash:     string | null
+  createdAt:  string
+}
+
+export interface RedeemQuoteDTO {
+  points:     number
+  celoAmount: string
+  rateLabel:  string
+  mock:       boolean
+}
+
+export interface RedeemSummaryDTO {
+  totalPoints: number
+  minPoints:   number
+  maxPoints:   number
+  rateLabel:   string
+  mock:        boolean
+  history:     PointRedemptionDTO[]
+}
+
 // ─── Friends ─────────────────────────────────────────────────────────────────
 export interface FriendDTO {
   id:        string

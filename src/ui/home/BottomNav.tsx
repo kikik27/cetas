@@ -15,6 +15,7 @@ type NavItem = {
 const ITEMS: NavItem[] = [
   { href: '/home',        label: 'Home',    src: '/assets/ui/home.png',        alt: 'Home'        },
   { href: '/tasks',       label: 'Quests',  src: '/assets/ui/task.png',        alt: 'Quests'      },
+  { href: '/redeem',      label: 'Redeem',  src: '/assets/celo/logo-symbol.png', alt: 'Redeem'    },
   { href: '/friends',     label: 'Friends', src: '/assets/ui/friends.png',     alt: 'Friends'     },
   { href: '/leaderboard', label: 'Ranks',   src: '/assets/ui/leaderboard.png', alt: 'Leaderboard' },
 ]

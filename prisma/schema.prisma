@@ -34,6 +34,7 @@ model Player {
   referralsMade Referral[]     @relation("referrer")
   referredBy    Referral?      @relation("referred")
   matchEntries  MatchEntry[]
+  pointRedemptions PointRedemption[]
   leaderboard   LeaderboardEntry?
 
   @@map("players")
@@ -87,6 +88,23 @@ model DailyClaim {
 
   @@unique([playerId, date])
   @@map("daily_claims")
+}
+
+// ─── Points Redemption (mock until on-chain contract is ready) ────────────────
+model PointRedemption {
+  id          String   @id @default(cuid())
+  playerId    String   @map("player_id")
+  points      Int
+  celoAmount  String   @map("celo_amount")
+  status      String   @default("mocked") // mocked | pending | confirmed | failed
+  txHash      String?  @map("tx_hash")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId, createdAt])
+  @@map("point_redemptions")
 }
 
 // ─── Friends & Referrals ──────────────────────────────────────────────────────
