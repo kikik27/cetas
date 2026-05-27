@@ -83,7 +83,7 @@ export default function FriendsClient() {
             </span>
             <span className="ml-auto rounded-full border border-[var(--border-gold)] bg-[rgba(200,146,42,0.1)]
                              px-2 py-0.5 font-display text-[9px] font-bold text-[var(--gold-mid)]">
-              +{REFERRAL_REWARD} pts / friend
+              +{REFERRAL_REWARD} XP / friend
             </span>
           </div>
           <div className="divider-gold" />
@@ -170,7 +170,7 @@ export default function FriendsClient() {
                 <p className="font-display text-[11px] font-bold text-[var(--ok)]">Code applied!</p>
                 <p className="text-[9px] text-[var(--text-3)]">
                   Used: <span className="font-mono font-bold">{usedCode}</span>
-                  {' '}· +{REFERRAL_REWARD} pts earned
+                  {' '}· referral linked
                 </p>
               </div>
             </div>
@@ -212,7 +212,7 @@ export default function FriendsClient() {
               )}
               {codeStatus === 'success' && (
                 <p className="text-[10px] text-[var(--ok)]">
-                  ✓ Code accepted! +{REFERRAL_REWARD} pts added.
+                  Code accepted. Your inviter can claim +{REFERRAL_REWARD} XP.
                 </p>
               )}
             </div>
@@ -325,7 +325,7 @@ function FriendRow({
         >
           <Gift className="h-3 w-3 text-[var(--gold-mid)]" />
           <span className="font-display text-[9px] font-bold uppercase tracking-wider text-[var(--gold-hi)]">
-            +{REFERRAL_REWARD}pts
+            +{REFERRAL_REWARD} XP
           </span>
         </button>
       )}

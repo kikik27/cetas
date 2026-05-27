@@ -4,8 +4,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/src/lib/db'
 import { requireAuth } from '@/src/lib/api-auth'
 import { claimFriendBodySchema, getZodMessage } from '@/src/lib/validation'
+import { REFERRAL_XP_REWARD } from '@/src/game/constants'
 
-const REFERRAL_REWARD = 100
+function levelForExperience(experience: number): number {
+  return Math.max(1, Math.floor(experience / 500) + 1)
+}
 
 export async function POST(req: NextRequest) {
   const { auth, error } = await requireAuth(req)
@@ -32,14 +35,29 @@ export async function POST(req: NextRequest) {
       })
       if (claim.count !== 1) throw new Error('ALREADY_CLAIMED')
 
+      const current = await tx.player.findUniqueOrThrow({
+        where: { id: auth.playerId },
+        select: { experience: true },
+      })
+      const nextExperience = current.experience + REFERRAL_XP_REWARD
+
       return tx.player.update({
         where: { id: auth.playerId },
-        data:  { totalPoints: { increment: REFERRAL_REWARD } },
+        data:  {
+          experience: { increment: REFERRAL_XP_REWARD },
+          level:      { set: levelForExperience(nextExperience) },
+        },
+        select: { experience: true, level: true },
       })
     })
 
     return NextResponse.json({
-      data: { friendId, reward: REFERRAL_REWARD, totalPoints: updatedPlayer.totalPoints },
+      data: {
+        friendId,
+        reward: REFERRAL_XP_REWARD,
+        experience: updatedPlayer.experience,
+        level: updatedPlayer.level,
+      },
     })
   } catch (err) {
     if (err instanceof Error && err.message === 'ALREADY_CLAIMED') {

@@ -24,7 +24,7 @@ async function claimReferralReward(friendId: string) {
   })
   const json = await res.json()
   if (!res.ok || json.error) throw new Error(json.error ?? 'Failed to claim reward')
-  return json.data as { friendId: string; reward: number; totalPoints: number }
+  return json.data as { friendId: string; reward: number; experience: number; level: number }
 }
 
 async function submitReferralCode(code: string) {
@@ -36,7 +36,7 @@ async function submitReferralCode(code: string) {
   })
   const json = await res.json()
   if (!res.ok || json.error) throw new Error(json.error ?? json.error)
-  return json.data as { accepted: boolean; reward: number; totalPoints: number }
+  return json.data as { accepted: boolean; friendId: string }
 }
 
 export function useFriends(enabled = true) {
@@ -56,7 +56,9 @@ export function useClaimReferralReward() {
       qc.setQueryData<FriendDTO[]>(friendKeys.list(), (old) =>
         old?.map(f => f.id === data.friendId ? { ...f, rewarded: true } : f)
       )
-      await syncPlayerQuery(qc, { totalPoints: data.totalPoints })
+      await syncPlayerQuery(qc, { experience: data.experience, level: data.level })
+      await qc.invalidateQueries({ queryKey: friendKeys.list() })
+      await qc.refetchQueries({ queryKey: friendKeys.list(), type: 'active' })
     },
   })
 }
@@ -65,8 +67,7 @@ export function useSubmitReferralCode() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: submitReferralCode,
-    onSuccess: async (data) => {
-      await syncPlayerQuery(qc, { totalPoints: data.totalPoints })
+    onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: friendKeys.list() })
       await qc.refetchQueries({ queryKey: friendKeys.list(), type: 'active' })
     },
