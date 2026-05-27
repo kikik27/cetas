@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Users, Copy, Check, Gift, UserPlus, Crown, Ticket, ArrowDownLeft, ArrowUpRight, Loader2 } from 'lucide-react'
+import { Users, Copy, Check, Gift, UserPlus, Crown, Ticket, ArrowDownLeft, ArrowUpRight, Loader2, Info } from 'lucide-react'
 import { useFriends, useClaimReferralReward, useSubmitReferralCode } from '@/src/hooks/useFriends'
 import { useWallet } from '@/src/providers/WalletProvider'
 import { Button } from '@/src/components/ui/Button'
@@ -83,10 +83,16 @@ export default function FriendsClient() {
             </span>
             <span className="ml-auto rounded-full border border-[var(--border-gold)] bg-[rgba(200,146,42,0.1)]
                              px-2 py-0.5 font-display text-[9px] font-bold text-[var(--gold-mid)]">
-              +{REFERRAL_REWARD} pts / friend
+              +{REFERRAL_REWARD} XP / friend
             </span>
           </div>
           <div className="divider-gold" />
+          <div className="flex items-start gap-2 rounded-xl border border-[rgba(200,146,42,0.24)] bg-[rgba(200,146,42,0.07)] px-3 py-2.5">
+            <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[var(--gold-mid)]" />
+            <p className="text-[10px] leading-relaxed text-[var(--text-2)]">
+              Referral rewards are XP-only for now. In a future update, inviting friends will also unlock CETAS Point rewards.
+            </p>
+          </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="flex flex-col items-center rounded-xl border border-[var(--border)] bg-[rgba(4,16,33,0.6)] py-2.5">
               <span className="font-display text-[20px] font-bold text-[var(--gold-hi)]">{isInitialLoading ? '-' : pendingCount}</span>
@@ -170,7 +176,7 @@ export default function FriendsClient() {
                 <p className="font-display text-[11px] font-bold text-[var(--ok)]">Code applied!</p>
                 <p className="text-[9px] text-[var(--text-3)]">
                   Used: <span className="font-mono font-bold">{usedCode}</span>
-                  {' '}· +{REFERRAL_REWARD} pts earned
+                  {' '}· referral linked
                 </p>
               </div>
             </div>
@@ -212,7 +218,7 @@ export default function FriendsClient() {
               )}
               {codeStatus === 'success' && (
                 <p className="text-[10px] text-[var(--ok)]">
-                  ✓ Code accepted! +{REFERRAL_REWARD} pts added.
+                  Code accepted. Your inviter can claim +{REFERRAL_REWARD} XP.
                 </p>
               )}
             </div>
@@ -325,7 +331,7 @@ function FriendRow({
         >
           <Gift className="h-3 w-3 text-[var(--gold-mid)]" />
           <span className="font-display text-[9px] font-bold uppercase tracking-wider text-[var(--gold-hi)]">
-            +{REFERRAL_REWARD}pts
+            +{REFERRAL_REWARD} XP
           </span>
         </button>
       )}

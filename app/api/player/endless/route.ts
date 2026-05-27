@@ -8,8 +8,12 @@ import {
   REROLLS_PER_STAGE,
   MAX_BOARD_SLOTS,
   MAX_GOLD,
+  ENDLESS_STAGE_CETAS_REWARD,
+  ENDLESS_STAGE_XP_REWARD,
 } from '@/src/game/constants'
 import { UNIT_DEFS } from '@/src/game/entities/unitDefs'
+import { grantCetasReward } from '@/src/lib/onchain'
+import type { Address } from 'viem'
 
 const VALID_UNIT_IDS = new Set(UNIT_DEFS.map(unit => unit.id))
 
@@ -36,6 +40,10 @@ const endlessProgressSchema = z.object({
 
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10)
+}
+
+function levelForExperience(experience: number): number {
+  return Math.max(1, Math.floor(experience / 500) + 1)
 }
 
 async function incrementTaskProgress(playerId: string, taskIds: string[]): Promise<void> {
@@ -101,17 +109,31 @@ export async function POST(req: NextRequest) {
         }
       : undefined
 
+    const nextExperience = current.experience + (stageAdvanced ? ENDLESS_STAGE_XP_REWARD : 0)
+
     await prisma.player.update({
       where: { id: auth.playerId },
       data: {
         endlessStage: { set: nextStage },
         bestStage: { set: nextBest },
+        ...(stageAdvanced && {
+          experience: { increment: ENDLESS_STAGE_XP_REWARD },
+          level:      { set: levelForExperience(nextExperience) },
+        }),
         ...(progress && { gameProgress: progress }),
       },
     })
 
+    let rewardTxHashes: string[] = []
+    let rewardError: string | null = null
     if (stageAdvanced) {
       await incrementTaskProgress(auth.playerId, ['play1', 'play3', 'win1'])
+      try {
+        rewardTxHashes = await grantCetasReward(auth.walletAddress as Address, ENDLESS_STAGE_CETAS_REWARD)
+      } catch (err) {
+        rewardError = err instanceof Error ? err.message : 'Failed to grant on-chain reward'
+        console.error('[POST /api/player/endless] on-chain reward failed', err)
+      }
     }
 
     const player = await prisma.player.findUnique({
@@ -127,8 +149,13 @@ export async function POST(req: NextRequest) {
         totalPoints: player?.totalPoints ?? current.totalPoints,
         experience: player?.experience ?? current.experience,
         level: player?.level ?? current.level,
-        pointsAwarded: 0,
-        experienceAwarded: 0,
+        pointsAwarded: stageAdvanced && !rewardError ? ENDLESS_STAGE_CETAS_REWARD : 0,
+        experienceAwarded: stageAdvanced ? ENDLESS_STAGE_XP_REWARD : 0,
+        onchainReward: {
+          status: stageAdvanced ? (rewardError ? 'failed' : 'confirmed') : 'skipped',
+          txHashes: rewardTxHashes,
+          error: rewardError,
+        },
       },
     })
   } catch (err) {

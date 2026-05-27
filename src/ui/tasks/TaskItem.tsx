@@ -62,7 +62,7 @@ export default function TaskItem({ def, progress, done, claimedAt, onClaim, clai
             'flex-shrink-0 font-display text-[10px] font-bold',
             done ? 'text-[var(--ok)]' : 'text-[var(--gold-mid)]'
           )}>
-            +{def.reward}
+            +{def.reward} XP
           </span>
         </div>
 

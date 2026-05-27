@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { Zap, Loader2, AlertTriangle } from 'lucide-react'
 import { Modal } from '@/src/components/ui/Modal'
 import { Button } from '@/src/components/ui/Button'
 import { useWallet } from '@/src/providers/WalletProvider'
-import { useCanClaimDaily, useDailyClaimMutation, useTxReceipt, useChainStatus } from '@/src/hooks/useCetasContracts'
+import { useBalanceOf, useCanClaimDaily, useDailyClaimMutation, useTxReceipt, useChainStatus } from '@/src/hooks/useCetasContracts'
 import { cn } from '@/src/lib/utils'
 
 export default function DailyChest() {
@@ -14,18 +14,28 @@ export default function DailyChest() {
   const isReady = authStatus === 'authenticated' && !!wallet
   const { isCorrectChain, switchToMainnet } = useChainStatus()
 
-  const { data: canClaim, isLoading: claimLoading } = useCanClaimDaily(wallet as `0x${string}`)
+  const { data: canClaim, isLoading: claimLoading, refetch: refetchCanClaim } = useCanClaimDaily(wallet as `0x${string}`)
+  const { refetch: refetchBalance } = useBalanceOf(wallet as `0x${string}`)
   const { claim, isPending } = useDailyClaimMutation()
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>(undefined)
-  const { isLoading: isConfirming, isSuccess } = useTxReceipt(txHash)
+  const { data: receipt, isLoading: isConfirming } = useTxReceipt(txHash)
+  const syncedTxRef = useRef<`0x${string}` | null>(null)
 
   const [showModal, setShowModal] = useState(false)
   const [animating, setAnimating] = useState(false)
 
-  const claimed = !claimLoading && canClaim === false
-  const isBusy = !isReady || claimLoading || isPending || isConfirming
+  const claimConfirmed = receipt?.status === 'success'
+  const claimFailed = receipt?.status === 'reverted'
+  const claimed = claimConfirmed || (!claimLoading && canClaim === false)
+  const isBusy = !isReady || claimLoading || isPending || isConfirming || animating
 
   const needsChainSwitch = isReady && !isCorrectChain
+
+  useEffect(() => {
+    if (!txHash || !claimConfirmed || syncedTxRef.current === txHash) return
+    syncedTxRef.current = txHash
+    void Promise.all([refetchBalance(), refetchCanClaim()])
+  }, [claimConfirmed, refetchBalance, refetchCanClaim, txHash])
 
   async function handleSwitchChain() {
     switchToMainnet()
@@ -77,7 +87,7 @@ export default function DailyChest() {
               </p>
             </div>
             <p className="font-display text-[13px] uppercase tracking-wider text-[var(--text-2)]">
-              {isConfirming ? 'Confirming...' : isSuccess ? 'Claimed!' : 'On-chain Daily Claim'}
+              {isConfirming ? 'Confirming...' : claimConfirmed ? 'Claimed!' : claimFailed ? 'Claim failed' : 'On-chain Daily Claim'}
             </p>
           </div>
 
@@ -158,14 +168,6 @@ export default function DailyChest() {
             {isBusy ? 'Loading...' : claimed ? 'Come back tomorrow' : 'Claim 10 CETAS'}
           </p>
         </div>
-
-        {!claimed && !isBusy && (
-          <div className="flex items-center gap-1 rounded-lg border border-[rgba(200,146,42,0.4)]
-                          bg-[rgba(200,146,42,0.1)] px-2 py-1">
-            <Zap className="h-3 w-3 text-[var(--gold-hi)]" />
-            <span className="font-display text-[9px] font-bold text-[var(--gold-hi)]">CETAS</span>
-          </div>
-        )}
       </button>
       )}
     </>

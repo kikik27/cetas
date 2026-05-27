@@ -12,7 +12,7 @@
  * connected wallet signs a short auth challenge.
  */
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useState, useSyncExternalStore } from 'react'
 import { useAccount } from 'wagmi'
 import { useAutoConnect } from '@/src/hooks/useAutoConnect'
 import { useAuth, type AuthStatus } from '@/src/hooks/useAuth'
@@ -62,24 +62,23 @@ const WalletContext = createContext<WalletContextValue>({
 function WalletContextBridge({ children }: { children: React.ReactNode }) {
   const { address, isConnected, isConnecting } = useAccount()
   const { error: connectError, isPending }     = useAutoConnect()
-  const [isMiniPay, setIsMiniPay]              = useState(() => isMiniPayEnvironment())
-
-  // Re-detect after mount (window not available during SSR)
-  useEffect(() => { setIsMiniPay(isMiniPayEnvironment()) }, [])
+  const isMiniPay = useSyncExternalStore(
+    () => () => {},
+    isMiniPayEnvironment,
+    () => false,
+  )
 
   // Dev fallback: stable mock address persisted in localStorage
-  const [devWallet, setDevWallet] = useState<string | null>(null)
-  useEffect(() => {
-    if (process.env.NODE_ENV !== 'development') return
-    if (address) return
+  const [devWallet] = useState<string | null>(() => {
+    if (process.env.NODE_ENV !== 'development' || typeof window === 'undefined') return null
     const stored = localStorage.getItem('cetas_dev_wallet')
-    if (stored) { setDevWallet(stored); return }
+    if (stored) return stored
     const mock = '0x' + Array.from({ length: 40 }, () =>
       Math.floor(Math.random() * 16).toString(16)
     ).join('')
     localStorage.setItem('cetas_dev_wallet', mock)
-    setDevWallet(mock)
-  }, [address])
+    return mock
+  })
 
   const effectiveWallet    = address?.toLowerCase() ?? devWallet ?? null
   const effectiveConnected = isConnected || (process.env.NODE_ENV === 'development' && !!devWallet)

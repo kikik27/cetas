@@ -34,8 +34,11 @@ export default function LandingGate({ className }: { className?: string }) {
   // Auto-open onboarding for new players
   useEffect(() => {
     if (authStatus === 'authenticated' && isNewPlayer && !open) {
-      setStep('name')
-      setOpen(true)
+      const timer = window.setTimeout(() => {
+        setStep('name')
+        setOpen(true)
+      }, 0)
+      return () => window.clearTimeout(timer)
     }
   }, [authStatus, isNewPlayer, open])
 

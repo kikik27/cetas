@@ -115,6 +115,14 @@ export interface BattleSummary {
   enemiesAlive: number
 }
 
+export interface StageRewardState {
+  status: 'idle' | 'pending' | 'confirmed' | 'failed' | 'skipped'
+  cetas: number
+  xp: number
+  txHashes: string[]
+  error: string | null
+}
+
 export type SelectedSource =
   | { src: 'board'; r: number; c: number }
   | { src: 'bench'; idx: number }
@@ -137,6 +145,7 @@ export interface GameState {
   enemyPreview: EnemyPreview[]
   formationBoard: BoardGrid | null
   lastBattleResult: BattleSummary | null
+  stageReward: StageRewardState
   /** Active arrow projectiles */
   projectiles: Projectile[]
   log: string[]

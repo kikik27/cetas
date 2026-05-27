@@ -10,7 +10,8 @@ type PlayerRankRecord = {
   id: string
   name: string
   avatarIdx: number
-  totalPoints: number
+  experience: number
+  level: number
   streakDays: number
   bestStage: number
   rankScore: number
@@ -40,26 +41,30 @@ export async function GET(req: NextRequest) {
         "id",
         "name",
         "avatar_idx" AS "avatarIdx",
-        "total_points" AS "totalPoints",
+        "experience",
+        "level",
         "streak_days" AS "streakDays",
         "best_stage" AS "bestStage",
         (
           (GREATEST("best_stage" - 1, 0) * ${ENDLESS_STAGE_RANK_WEIGHT})
-          + "total_points"
+          + "experience"
+          + (GREATEST("level" - 1, 0) * 250)
           + ("streak_days" * 50)
         ) AS "rankScore"
       FROM "players"
-      ORDER BY "rankScore" DESC, "best_stage" DESC, "total_points" DESC, "streak_days" DESC, "created_at" ASC
+      ORDER BY "rankScore" DESC, "best_stage" DESC, "level" DESC, "experience" DESC, "streak_days" DESC, "created_at" ASC
       LIMIT ${limit}
     `
 
-    const leaderboard: LeaderboardEntryDTO[] = players.map((p: PlayerRankRecord, i: number) => ({
+    const leaderboard: LeaderboardEntryDTO[] = players.map((p, i: number) => ({
       rank:      i + 1,
       playerId:  p.id,
       name:      p.name,
       avatarIdx: p.avatarIdx,
       score:     p.rankScore,
-      points:    p.totalPoints,
+      points:    0,
+      experience: p.experience,
+      level:     p.level,
       bestStage: p.bestStage,
       wins:      Math.max(0, p.bestStage - 1),
       streak:    p.streakDays,
@@ -70,34 +75,46 @@ export async function GET(req: NextRequest) {
     if (auth) {
       const me = await prisma.player.findUnique({
         where: { id: auth.playerId },
-        select: { totalPoints: true, streakDays: true, bestStage: true, createdAt: true },
+        select: { experience: true, level: true, streakDays: true, bestStage: true, createdAt: true },
       })
       if (me) {
-        const myScore = Math.max(0, me.bestStage - 1) * ENDLESS_STAGE_RANK_WEIGHT + me.totalPoints + me.streakDays * 50
+        const myScore =
+          Math.max(0, me.bestStage - 1) * ENDLESS_STAGE_RANK_WEIGHT +
+          me.experience +
+          Math.max(0, me.level - 1) * 250 +
+          me.streakDays * 50
         const countRows = await prisma.$queryRaw<{ count: bigint }[]>`
           SELECT COUNT(*)::bigint AS "count"
           FROM "players"
           WHERE
-            ((GREATEST("best_stage" - 1, 0) * ${ENDLESS_STAGE_RANK_WEIGHT}) + "total_points" + ("streak_days" * 50)) > ${myScore}
+            ((GREATEST("best_stage" - 1, 0) * ${ENDLESS_STAGE_RANK_WEIGHT}) + "experience" + (GREATEST("level" - 1, 0) * 250) + ("streak_days" * 50)) > ${myScore}
             OR (
-              ((GREATEST("best_stage" - 1, 0) * ${ENDLESS_STAGE_RANK_WEIGHT}) + "total_points" + ("streak_days" * 50)) = ${myScore}
+              ((GREATEST("best_stage" - 1, 0) * ${ENDLESS_STAGE_RANK_WEIGHT}) + "experience" + (GREATEST("level" - 1, 0) * 250) + ("streak_days" * 50)) = ${myScore}
               AND "best_stage" > ${me.bestStage}
             )
             OR (
-              ((GREATEST("best_stage" - 1, 0) * ${ENDLESS_STAGE_RANK_WEIGHT}) + "total_points" + ("streak_days" * 50)) = ${myScore}
+              ((GREATEST("best_stage" - 1, 0) * ${ENDLESS_STAGE_RANK_WEIGHT}) + "experience" + (GREATEST("level" - 1, 0) * 250) + ("streak_days" * 50)) = ${myScore}
               AND "best_stage" = ${me.bestStage}
-              AND "total_points" > ${me.totalPoints}
+              AND "level" > ${me.level}
             )
             OR (
-              ((GREATEST("best_stage" - 1, 0) * ${ENDLESS_STAGE_RANK_WEIGHT}) + "total_points" + ("streak_days" * 50)) = ${myScore}
+              ((GREATEST("best_stage" - 1, 0) * ${ENDLESS_STAGE_RANK_WEIGHT}) + "experience" + (GREATEST("level" - 1, 0) * 250) + ("streak_days" * 50)) = ${myScore}
               AND "best_stage" = ${me.bestStage}
-              AND "total_points" = ${me.totalPoints}
+              AND "level" = ${me.level}
+              AND "experience" > ${me.experience}
+            )
+            OR (
+              ((GREATEST("best_stage" - 1, 0) * ${ENDLESS_STAGE_RANK_WEIGHT}) + "experience" + (GREATEST("level" - 1, 0) * 250) + ("streak_days" * 50)) = ${myScore}
+              AND "best_stage" = ${me.bestStage}
+              AND "level" = ${me.level}
+              AND "experience" = ${me.experience}
               AND "streak_days" > ${me.streakDays}
             )
             OR (
-              ((GREATEST("best_stage" - 1, 0) * ${ENDLESS_STAGE_RANK_WEIGHT}) + "total_points" + ("streak_days" * 50)) = ${myScore}
+              ((GREATEST("best_stage" - 1, 0) * ${ENDLESS_STAGE_RANK_WEIGHT}) + "experience" + (GREATEST("level" - 1, 0) * 250) + ("streak_days" * 50)) = ${myScore}
               AND "best_stage" = ${me.bestStage}
-              AND "total_points" = ${me.totalPoints}
+              AND "level" = ${me.level}
+              AND "experience" = ${me.experience}
               AND "streak_days" = ${me.streakDays}
               AND "created_at" < ${me.createdAt}
             )

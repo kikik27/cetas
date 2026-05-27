@@ -28,7 +28,7 @@ async function claimTask(taskId: string) {
   })
   const json = await res.json()
   if (!res.ok || json.error) throw new Error(json.error ?? 'Failed to claim task')
-  return json.data as { taskId: string; reward: number; totalPoints: number; claimedAt: string }
+  return json.data as { taskId: string; reward: number; experience: number; level: number; claimedAt: string }
 }
 
 async function incrementTaskProgress(payload: { taskId: string; increment?: number }) {
@@ -63,7 +63,7 @@ export function useClaimTask() {
           t.id === data.taskId ? { ...t, done: true, claimedAt: data.claimedAt } : t
         )
       )
-      await syncPlayerQuery(qc, { totalPoints: data.totalPoints })
+      await syncPlayerQuery(qc, { experience: data.experience, level: data.level })
     },
   })
 }

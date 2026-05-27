@@ -16,13 +16,23 @@ import {
   STARTING_GOLD,
   REROLL_COST,
   REROLLS_PER_STAGE,
+  ENDLESS_STAGE_CETAS_REWARD,
+  ENDLESS_STAGE_XP_REWARD,
 } from '../constants'
-import type { BoardGrid, BenchSlots, Unit } from '../core/types'
+import type { BoardGrid, BenchSlots, StageRewardState, Unit } from '../core/types'
 import type { PlayerGameProgressDTO, SavedGameUnitDTO } from '@/src/lib/api-types'
 import { playerKeys } from '@/src/hooks/usePlayer'
 import { queryClient } from '@/src/lib/queryClient'
 
 const MAX_LOG = 5
+
+const IDLE_STAGE_REWARD: StageRewardState = {
+  status: 'idle',
+  cetas: 0,
+  xp: 0,
+  txHashes: [],
+  error: null,
+}
 
 function addLog(logs: string[], msg: string): string[] {
   const next = [...logs, msg]
@@ -72,6 +82,7 @@ function initialState(): GameState {
     enemyPreview: generateEnemyPreview(INITIAL_STAGE, INITIAL_BOARD_SLOTS),
     formationBoard: null,
     lastBattleResult: null,
+    stageReward: IDLE_STAGE_REWARD,
     projectiles: [],
     log: ['Endless mode. Scout the stage, set your formation, then attack!'],
   }
@@ -166,7 +177,7 @@ function persistGameProgress(state: {
   rerollsLeft: number
   board: BoardGrid
   bench: BenchSlots
-}, stageOverride?: number): void {
+}, stageOverride?: number, onSaved?: (data: Record<string, unknown>) => void): void {
   fetch('/api/player/endless', {
     method:      'POST',
     headers:     { 'Content-Type': 'application/json' },
@@ -184,6 +195,7 @@ function persistGameProgress(state: {
     .then(async res => {
       const json = await res.json().catch(() => null)
       if (!res.ok || !json?.data) return
+      onSaved?.(json.data as Record<string, unknown>)
       queryClient.setQueryData(playerKeys.me, (current: unknown) =>
         current && typeof current === 'object'
           ? { ...current, ...json.data }
@@ -191,6 +203,7 @@ function persistGameProgress(state: {
       )
       void queryClient.invalidateQueries({ queryKey: ['leaderboard'] })
       void queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      void queryClient.invalidateQueries()
     })
     .catch(() => {})
 }
@@ -388,6 +401,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       board: boardWithEnemies,
       formationBoard,
       lastBattleResult: null,
+      stageReward: IDLE_STAGE_REWARD,
       battleRunning: true,
       battleTimeMs: 0,
       speedUp: false,
@@ -452,10 +466,41 @@ export const useGameStore = create<GameStore>((set, get) => ({
         bench: recalledBench,
         formationBoard: null,
         lastBattleResult: resolvedResult,
+        stageReward: {
+          status: 'pending',
+          cetas: ENDLESS_STAGE_CETAS_REWARD,
+          xp: ENDLESS_STAGE_XP_REWARD,
+          txHashes: [],
+          error: null,
+        },
         battleRunning: false,
         log: addLog(s.log, `Stage ${round} VICTORY! +${result.goldEarned}g, slots up to ${newSlots}`),
       }))
-      persistGameProgress(get(), nextStage)
+      persistGameProgress(get(), nextStage, (data) => {
+        const reward = data.onchainReward as
+          | { status?: string; txHashes?: string[]; error?: string | null }
+          | undefined
+        const pointsAwarded = typeof data.pointsAwarded === 'number' ? data.pointsAwarded : 0
+        const experienceAwarded = typeof data.experienceAwarded === 'number' ? data.experienceAwarded : 0
+        const failed = reward?.status === 'failed'
+        set(s => ({
+          stageReward: {
+            status: failed ? 'failed' : pointsAwarded > 0 ? 'confirmed' : 'skipped',
+            cetas: pointsAwarded,
+            xp: experienceAwarded,
+            txHashes: reward?.txHashes ?? [],
+            error: failed ? reward?.error ?? 'On-chain reward failed' : null,
+          },
+          log: addLog(
+            s.log,
+            failed
+              ? `CETAS reward failed: ${reward?.error ?? 'unknown error'}`
+              : pointsAwarded > 0
+              ? `Reward confirmed: +${pointsAwarded} CETAS, +${experienceAwarded} XP`
+              : `Stage saved. No CETAS reward issued.`,
+          ),
+        }))
+      })
     } else {
       const newHp = Math.max(0, hp - result.hpLost)
       set(s => ({
@@ -466,6 +511,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         bench: recalledBench,
         formationBoard: null,
         lastBattleResult: resolvedResult,
+        stageReward: IDLE_STAGE_REWARD,
         battleRunning: false,
         log: addLog(s.log, `Stage ${round} DEFEAT! -${result.hpLost} HP, +${result.goldEarned}g, retry stage ${round}`),
       }))

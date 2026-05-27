@@ -77,7 +77,7 @@ export default function LeaderboardClient() {
           <EmptyState
             icon={<Users className="h-8 w-8" />}
             title="No ranked players yet"
-            description="Earn points or keep a login streak to appear here."
+            description="Clear stages and gain XP to appear here."
             className="m-2 min-h-[260px] justify-center"
           />
         ) : (
@@ -136,7 +136,9 @@ export default function LeaderboardClient() {
                     <p className="font-display text-[13px] font-bold tabular-nums text-[var(--gold-hi)]">
                       {p.score.toLocaleString()}
                     </p>
-                    <p className="text-[9px] text-[var(--text-3)]">{p.points.toLocaleString()} pts</p>
+                    <p className="text-[9px] text-[var(--text-3)]">
+                      Lv {p.level} · {p.experience.toLocaleString()} XP
+                    </p>
                   </div>
                 </div>
               )

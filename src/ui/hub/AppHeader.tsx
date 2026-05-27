@@ -16,8 +16,6 @@ export default function AppHeader() {
         <span className="font-display text-[9px] uppercase tracking-[0.2em] text-[var(--gold-mid)]">
           Celo Tactics
         </span>
-        <span className="h-1 w-1 rounded-full bg-[var(--ok)]" />
-        <span className="font-display text-[9px] text-[var(--ok)]">v0.1</span>
       </div>
     </header>
   )

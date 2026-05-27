@@ -12,7 +12,7 @@ import Controls from './Controls'
 import BattleLog from './BattleLog'
 import RoundModal from './RoundModal'
 import { audioManager } from '@/src/lib/audioManager'
-import { BATTLE_LIMIT_MS, BATTLE_TICK_CAP, PHASE } from '@/src/game/constants'
+import { BATTLE_LIMIT_MS, BATTLE_TICK_CAP, ENDLESS_STAGE_CETAS_REWARD, ENDLESS_STAGE_XP_REWARD, PHASE } from '@/src/game/constants'
 import { useWallet } from '@/src/providers/WalletProvider'
 import { usePlayer } from '@/src/hooks/usePlayer'
 import { cn } from '@/src/lib/utils'
@@ -41,6 +41,7 @@ export default function GameHUD() {
   const log           = useGameStore(s => s.log)
   const projectiles   = useGameStore(s => s.projectiles)
   const lastBattleResult = useGameStore(s => s.lastBattleResult)
+  const stageReward = useGameStore(s => s.stageReward)
 
   const setSavedStage  = useGameStore(s => s.setSavedStage)
   const setSavedProgress = useGameStore(s => s.setSavedProgress)
@@ -104,11 +105,19 @@ export default function GameHUD() {
         buttonLabel: 'Play Again',
       })
     } else if (result.win) {
+      const rewardText =
+        stageReward.status === 'pending'
+          ? ` Reward: +${ENDLESS_STAGE_CETAS_REWARD} CETAS confirming on-chain, +${ENDLESS_STAGE_XP_REWARD} XP.`
+          : stageReward.status === 'confirmed'
+          ? ` Reward confirmed: +${stageReward.cetas} CETAS, +${stageReward.xp} XP.`
+          : stageReward.status === 'failed'
+          ? ` Reward failed: ${stageReward.error ?? 'check server logs'}. +${stageReward.xp} XP saved.`
+          : ' Reward pending.'
       setModal({
         show: true,
         title: 'Victory!',
         titleColor: 'var(--ok)',
-        description: `${result.aliveCount} units survived! +${result.goldEarned} gold.${result.slotsGained ? ' Slot unlocked!' : ''}`,
+        description: `${result.aliveCount} units survived! +${result.goldEarned} gold.${result.slotsGained ? ' Slot unlocked!' : ''}${rewardText}`,
         buttonLabel: `Stage ${round + 1} ->`,
       })
     } else {
@@ -122,7 +131,7 @@ export default function GameHUD() {
     }
     }
     void showResultModal()
-  }, [battleRunning, hp, lastBattleResult, phase, round])
+  }, [battleRunning, hp, lastBattleResult, phase, round, stageReward])
 
   const boardCount = getBoardUnitCount(board)
   const isPrep = phase === PHASE.PREP

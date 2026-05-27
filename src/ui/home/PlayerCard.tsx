@@ -6,6 +6,7 @@ import { Crown, Flame, Pencil, X, Check, Loader2, CircleCheck, CircleX } from 'l
 import { useWallet } from '@/src/providers/WalletProvider'
 import { usePlayer, useUpdatePlayer } from '@/src/hooks/usePlayer'
 import { useCheckName } from '@/src/hooks/useCheckName'
+import { formatCETAS, useBalanceOf } from '@/src/hooks/useCetasContracts'
 import AvatarPicker from './AvatarPicker'
 import { cn } from '@/src/lib/utils'
 
@@ -14,6 +15,8 @@ export default function PlayerCard() {
   const updateMutation = useUpdatePlayer()
   const { data: queryPlayer, isLoading } = usePlayer(authStatus === 'authenticated')
   const player = queryPlayer ?? walletPlayer
+  const wallet = player?.walletAddress as `0x${string}` | undefined
+  const { data: onchainPoints, isLoading: pointsLoading } = useBalanceOf(wallet)
 
   const [pickerOpen, setPickerOpen] = useState(false)
   const [renaming,   setRenaming]   = useState(false)
@@ -21,7 +24,6 @@ export default function PlayerCard() {
 
   const name            = player?.name            ?? 'Commander'
   const avatarIdx       = player?.avatarIdx       ?? 1
-  const totalPoints     = player?.totalPoints     ?? 0
   const experience      = player?.experience      ?? 0
   const streakDays      = player?.streakDays      ?? 0
   const level           = player?.level           ?? 1
@@ -239,10 +241,10 @@ export default function PlayerCard() {
                         rounded-xl border border-[var(--border-gold)]
                         bg-[rgba(200,146,42,0.08)] px-3 py-2.5">
           <span className="text-[8px] font-semibold uppercase tracking-wider text-[var(--text-3)]">
-            Points
+            CETAS
           </span>
           <span className="font-display text-[17px] font-bold leading-none tabular-nums text-[var(--gold-hi)]">
-            {totalPoints.toLocaleString()}
+            {pointsLoading ? '...' : formatCETAS(onchainPoints as bigint | undefined)}
           </span>
           <div className="mt-0.5 flex items-center gap-0.5">
             <Flame className="h-2.5 w-2.5 text-[var(--warn)]" />

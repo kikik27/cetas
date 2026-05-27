@@ -191,7 +191,6 @@ export function useAuth(wallet: string | null) {
     return () => { cancelled = true }
   // wallet is the only real trigger — all other guards use refs
   // loginTrigger forces re-run after retryLogin
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wallet, loginTrigger, qc])
 
   // ── Retry: reset so Step 2 can re-run ─────────────────────────────────────

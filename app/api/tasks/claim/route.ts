@@ -9,6 +9,10 @@ function todayKey(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
+function levelForExperience(experience: number): number {
+  return Math.max(1, Math.floor(experience / 500) + 1)
+}
+
 export async function POST(req: NextRequest) {
   const { auth, error } = await requireAuth(req)
   if (error) return error
@@ -47,13 +51,22 @@ export async function POST(req: NextRequest) {
         throw new Error('TASK_NOT_COMPLETED')
       }
 
+      const current = await tx.player.findUniqueOrThrow({
+        where: { id: auth.playerId },
+        select: { experience: true },
+      })
+      const nextExperience = current.experience + def.reward
+
       const [progress, player] = await Promise.all([
         tx.taskProgress.findUniqueOrThrow({
           where: { playerId_taskId_date: { playerId: auth.playerId, taskId, date } },
         }),
         tx.player.update({
           where: { id: auth.playerId },
-          data:  { totalPoints: { increment: def.reward } },
+          data:  {
+            experience: { increment: def.reward },
+            level:      { set: levelForExperience(nextExperience) },
+          },
         }),
       ])
 
@@ -64,7 +77,8 @@ export async function POST(req: NextRequest) {
       data: {
         taskId,
         reward:      def.reward,
-        totalPoints: updatedPlayer.totalPoints,
+        experience:  updatedPlayer.experience,
+        level:       updatedPlayer.level,
         claimedAt:   updatedProgress.claimedAt?.toISOString(),
       },
     })
