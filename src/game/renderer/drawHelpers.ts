@@ -236,6 +236,70 @@ export function drawStars(ctx: CanvasRenderingContext2D, stars: number, cx: numb
   ctx.restore()
 }
 
+export function drawAttackRadius(
+  ctx: CanvasRenderingContext2D,
+  opts: { row: number; col: number; range: number; rows: number; cols: number; cw: number; ch: number; enemy?: boolean }
+) {
+  const { row, col, range, rows, cols, cw, ch, enemy = false } = opts
+  if (range <= 0) return
+
+  const fill = enemy ? 'rgba(248, 113, 113, 0.16)' : 'rgba(96, 165, 250, 0.18)'
+  const stroke = enemy ? 'rgba(248, 113, 113, 0.78)' : 'rgba(96, 165, 250, 0.82)'
+  const glow = enemy ? 'rgba(248, 113, 113, 0.35)' : 'rgba(125, 211, 252, 0.42)'
+
+  ctx.save()
+  ctx.shadowColor = glow
+  ctx.shadowBlur = 10
+  ctx.lineWidth = 1.5
+
+  for (let r = Math.max(0, row - range); r <= Math.min(rows - 1, row + range); r++) {
+    for (let c = Math.max(0, col - range); c <= Math.min(cols - 1, col + range); c++) {
+      const dist = Math.max(Math.abs(r - row), Math.abs(c - col))
+      if (dist > range) continue
+
+      const x = c * cw, y = r * ch
+      const pad = dist === 0 ? 5 : 7
+      const alpha = dist === 0 ? 0.28 : 0.16
+
+      ctx.globalAlpha = alpha
+      ctx.fillStyle = fill
+      roundRect(ctx, x + pad, y + pad, cw - pad * 2, ch - pad * 2, 8)
+      ctx.fill()
+
+      ctx.globalAlpha = dist === range ? 0.95 : 0.35
+      ctx.strokeStyle = dist === range ? stroke : glow
+      roundRect(ctx, x + pad, y + pad, cw - pad * 2, ch - pad * 2, 8)
+      ctx.stroke()
+    }
+  }
+
+  const cx = col * cw + cw / 2
+  const cy = row * ch + ch / 2
+  ctx.globalAlpha = 0.95
+  ctx.strokeStyle = stroke
+  ctx.lineWidth = 2
+  ctx.setLineDash([5, 5])
+  ctx.beginPath()
+  ctx.arc(cx, cy, Math.min(cw, ch) * 0.34 + range * Math.min(cw, ch) * 0.82, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.setLineDash([])
+  ctx.restore()
+}
+
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  const radius = Math.min(r, w / 2, h / 2)
+  ctx.beginPath()
+  ctx.moveTo(x + radius, y)
+  ctx.lineTo(x + w - radius, y)
+  ctx.quadraticCurveTo(x + w, y, x + w, y + radius)
+  ctx.lineTo(x + w, y + h - radius)
+  ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h)
+  ctx.lineTo(x + radius, y + h)
+  ctx.quadraticCurveTo(x, y + h, x, y + h - radius)
+  ctx.lineTo(x, y + radius)
+  ctx.quadraticCurveTo(x, y, x + radius, y)
+}
+
 export function drawFloats(ctx: CanvasRenderingContext2D, unit: Unit, cx: number, cy: number, spriteH: number) {
   unit.floats = unit.floats.filter(f => {
     ctx.save(); ctx.globalAlpha = Math.max(0, f.life / 20)
