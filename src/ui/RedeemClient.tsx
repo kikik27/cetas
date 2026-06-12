@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import {
   AlertTriangle,
@@ -67,6 +67,12 @@ export default function RedeemClient() {
   const swapMutation = useSwapMutation()
   const { data: receipt, isLoading: isConfirming } = useTxReceipt(txHash)
 
+  // Approval receipt tracked separately so we can wait for on-chain confirmation
+  // before proceeding to the swap.
+  const [approvalHash, setApprovalHash] = useState<`0x${string}` | undefined>(undefined)
+  const { data: approvalReceipt } = useTxReceipt(approvalHash)
+  const approvalDoneRef = useRef(false)
+
   // ── Derived ──────────────────────────────────────────────────────────────────
   const balance = balanceWei as bigint | undefined
   const allowance = allowanceWei as bigint | undefined
@@ -90,16 +96,31 @@ export default function RedeemClient() {
     if (!canSwap) return
     setToast(null)
     setSettlementHash(undefined)
+    approvalDoneRef.current = false
 
     try {
       if (needsApproval) {
         setStep('approving')
         const approveTx = await approveMutation.approve(MAINNET.CetasTreasury, MAX_ALLOWANCE)
-        setTxHash(approveTx)
-        await refetchAllowance()
+        setApprovalHash(approveTx)
+        // Swap will be triggered by the approvalReceipt effect below
+        // once the approve tx is confirmed on-chain.
+        return
       }
 
-      setStep('swapping')
+      // No approval needed — go straight to swap
+      await executeSwap()
+    } catch (err) {
+      setStep('input')
+      setApprovalHash(undefined)
+      setToastKind('error')
+      setToast(err instanceof Error ? err.message : 'Transaction failed')
+    }
+  }
+
+  const executeSwap = useCallback(async () => {
+    setStep('swapping')
+    try {
       const swapTx = await swapMutation.swap(amountWei)
       setTxHash(swapTx)
       setSettlementHash(swapTx)
@@ -107,9 +128,36 @@ export default function RedeemClient() {
     } catch (err) {
       setStep('input')
       setToastKind('error')
-      setToast(err instanceof Error ? err.message : 'Transaction failed')
+      setToast(err instanceof Error ? err.message : 'Swap failed')
     }
-  }
+  }, [amountWei, parsedAmount, previewWei, swapMutation])
+
+  // When approval receipt arrives (on-chain confirmed), refetch allowance then swap.
+  useEffect(() => {
+    if (!approvalHash || !approvalReceipt || approvalDoneRef.current) return
+    if (approvalReceipt.transactionHash.toLowerCase() !== approvalHash.toLowerCase()) return
+
+    approvalDoneRef.current = true
+    void (async () => {
+      try {
+        if (approvalReceipt.status !== 'success') {
+          setToastKind('error')
+          setToast('Approval transaction reverted.')
+          setStep('input')
+          return
+        }
+
+        await refetchAllowance()
+        await executeSwap()
+      } catch (err) {
+        setStep('input')
+        setToastKind('error')
+        setToast(err instanceof Error ? err.message : 'Failed after approval')
+      } finally {
+        setApprovalHash(undefined)
+      }
+    })()
+  }, [approvalHash, approvalReceipt, refetchAllowance, executeSwap])
 
   useEffect(() => {
     if (!settlementHash || !receipt || settledSwapRef.current === settlementHash) return
