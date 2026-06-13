@@ -27,7 +27,6 @@ import {
   useChainStatus,
   toCETASWei,
   formatCETAS,
-  MAX_ALLOWANCE,
 } from '@/src/hooks/useCetasContracts'
 import { MAINNET } from '@/src/lib/contracts'
 
@@ -94,7 +93,7 @@ export default function RedeemClient() {
     try {
       if (needsApproval) {
         setStep('approving')
-        const approveTx = await approveMutation.approve(MAINNET.CetasTreasury, MAX_ALLOWANCE)
+        const approveTx = await approveMutation.approve(MAINNET.CetasTreasury, amountWei)
         setTxHash(approveTx)
         await refetchAllowance()
       }
@@ -251,7 +250,7 @@ export default function RedeemClient() {
           {needsApproval && step === 'input' && (
             <p className="relative z-[1] flex items-center gap-1.5 text-[10px] text-[var(--ally)]">
               <AlertTriangle className="h-3 w-3 flex-shrink-0" />
-              First swap needs approval (2 transactions, next swaps only 1)
+              Approve this swap amount (2 transactions)
             </p>
           )}
 
