@@ -5,7 +5,7 @@ import type { BoardGrid, Unit, SelectedSource, Projectile } from '../core/types'
 import { COLS, ROWS } from '../systems/boardSystem'
 import { SPRITE_SHEETS, getSpriteKey, type AnimState } from '../assets/spriteRegistry'
 import { loadImg, preloadAllGameImages } from './assetLoader'
-import { drawArena, drawFloats, drawHpBar, drawProjectiles, drawStars, drawUnit } from './drawHelpers'
+import { drawArena, drawAttackRadius, drawFloats, drawHpBar, drawProjectiles, drawStars, drawUnit } from './drawHelpers'
 
 export const BOARD_W = 480
 export const BOARD_H = 640
@@ -140,6 +140,20 @@ export default function PixiBoard({
       ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1
       for (let r = 0; r < ROWS; r++)
         for (let c = 0; c < COLS; c++) ctx.strokeRect(c * CW, r * CH, CW, CH)
+
+      // ── Attack radius overlay for selected unit ────────────────────────
+      if (curSelected?.src === 'board') {
+        const selR = (curSelected as { src: 'board'; r: number; c: number }).r
+        const selC = (curSelected as { src: 'board'; r: number; c: number }).c
+        const selUnit = curBoard[selR]?.[selC]
+        if (selUnit && selUnit.attackRange > 0) {
+          drawAttackRadius(ctx, {
+            row: selR, col: selC, range: selUnit.attackRange,
+            rows: ROWS, cols: COLS, cw: CW, ch: CH,
+            enemy: selUnit.enemy,
+          })
+        }
+      }
 
       // Draw cell highlights
       for (let r = 0; r < ROWS; r++) {
